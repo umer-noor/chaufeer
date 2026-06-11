@@ -9,7 +9,11 @@ const getUserById = async (id) => {
 };
 
 const createUser = async (userData) => {
-  return User.create(userData);
+  return User.create({
+    ...userData,
+    provider: "local",
+    providerId: userData.email,
+  });
 };
 
 const updateUser = async (id, userData) => {

@@ -9,15 +9,30 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
-      unique: true,
       lowercase: true,
       trim: true,
+      sparse: true,
+    },
+    avatar: {
+      type: String,
+      default: null,
+    },
+    provider: {
+      type: String,
+      enum: ["google", "facebook", "local"],
+      required: true,
+    },
+    providerId: {
+      type: String,
+      required: true,
     },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ provider: 1, providerId: 1 }, { unique: true });
+userSchema.index({ email: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("User", userSchema);
