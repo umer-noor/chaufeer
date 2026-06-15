@@ -13,6 +13,47 @@ const getGoogleClientIds = () => {
   ].filter(Boolean);
 };
 
+const signup = async ({ full_name, email, password, phone_number }) => {
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    const error = new Error("Email already registered");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.create({
+    full_name,
+    email,
+    password,
+    phone_number,
+    provider: "local",
+    providerId: email,
+  });
+
+  return { user, token: generateToken(user._id) };
+};
+
+const login = async ({ email, password }) => {
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user || user.provider !== "local") {
+    const error = new Error("Invalid email or password");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const isPasswordValid = await user.comparePassword(password);
+
+  if (!isPasswordValid) {
+    const error = new Error("Invalid email or password");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  return { user, token: generateToken(user._id) };
+};
+
 const verifyGoogleToken = async (idToken) => {
   const clientIds = getGoogleClientIds();
 
@@ -36,8 +77,7 @@ const verifyGoogleToken = async (idToken) => {
   return {
     providerId: payload.sub,
     email: payload.email,
-    name: payload.name,
-    avatar: payload.picture || null,
+    full_name: payload.name,
   };
 };
 
@@ -65,70 +105,62 @@ const verifyFacebookToken = async (accessToken) => {
     throw error;
   }
 
-  const profileUrl = `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`;
+  const profileUrl = `https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`;
   const profileResponse = await axios.get(profileUrl);
   const profile = profileResponse.data;
 
   return {
     providerId: profile.id,
-    email: profile.email || null,
-    name: profile.name,
-    avatar: profile.picture?.data?.url || null,
+    email: profile.email || `facebook_${profile.id}@oauth.local`,
+    full_name: profile.name,
   };
 };
 
-const findOrCreateUser = async (provider, profile) => {
-  let user = await User.findOne({
-    provider,
-    providerId: profile.providerId,
-  });
-
-  if (!user && profile.email) {
-    user = await User.findOne({ email: profile.email });
-  }
+const findOrCreateOAuthUser = async (provider, profile) => {
+  let user = await User.findOne({ provider, providerId: profile.providerId });
 
   if (user) {
-    user.name = profile.name;
-    user.avatar = profile.avatar;
-    if (profile.email && !user.email) {
+    user.full_name = profile.full_name;
+    if (profile.email && user.email.endsWith("@oauth.local")) {
       user.email = profile.email;
     }
     await user.save();
-  } else {
-    user = await User.create({
-      name: profile.name,
-      email: profile.email,
-      avatar: profile.avatar,
-      provider,
-      providerId: profile.providerId,
-    });
+    return user;
   }
 
-  return user;
+  const existingEmailUser = await User.findOne({ email: profile.email });
+
+  if (existingEmailUser) {
+    const error = new Error("Email already registered with another login method");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return User.create({
+    full_name: profile.full_name,
+    email: profile.email,
+    provider,
+    providerId: profile.providerId,
+  });
 };
 
-const authenticateWithGoogle = async (idToken) => {
+const signupWithGoogle = async (idToken) => {
   const profile = await verifyGoogleToken(idToken);
-  const user = await findOrCreateUser("google", profile);
-  const token = generateToken(user._id);
+  const user = await findOrCreateOAuthUser("google", profile);
 
-  return { user, token };
+  return { user, token: generateToken(user._id) };
 };
 
-const authenticateWithFacebook = async (accessToken) => {
+const signupWithFacebook = async (accessToken) => {
   const profile = await verifyFacebookToken(accessToken);
-  const user = await findOrCreateUser("facebook", profile);
-  const token = generateToken(user._id);
+  const user = await findOrCreateOAuthUser("facebook", profile);
 
-  return { user, token };
-};
-
-const getCurrentUser = async (userId) => {
-  return User.findById(userId).select("-__v");
+  return { user, token: generateToken(user._id) };
 };
 
 module.exports = {
-  authenticateWithGoogle,
-  authenticateWithFacebook,
-  getCurrentUser,
+  signup,
+  login,
+  signupWithGoogle,
+  signupWithFacebook,
 };

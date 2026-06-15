@@ -14,7 +14,7 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select("-__v");
+    req.user = await User.findById(decoded.id).select("-password -__v");
 
     if (!req.user) {
       return res.status(401).json({ success: false, message: "User not found" });
