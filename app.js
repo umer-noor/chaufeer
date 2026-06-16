@@ -31,6 +31,11 @@ app.get("/", (req, res) => {
         get: "GET /api/booking/get",
         getOne: "GET /api/booking/:id",
       },
+      get_in_touch: {
+        create: "POST /api/get_in_touch/create",
+        get: "GET /api/get_in_touch/get",
+        getOne: "GET /api/get_in_touch/:id",
+      },
     },
   });
 });

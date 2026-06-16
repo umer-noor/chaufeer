@@ -61,7 +61,39 @@ const sendBookingConfirmationEmail = async (booking, user) => {
   console.log(`Booking confirmation email sent to ${booking.user_email}`);
 };
 
+const sendGetInTouchEmail = async (inquiry) => {
+  if (!isEmailConfigured()) {
+    console.warn("Email not configured. Skipping get in touch email.");
+    return;
+  }
+
+  const transporter = createTransporter();
+  const from = process.env.EMAIL_FROM || process.env.SMTP_USER;
+
+  const mailOptions = {
+    from,
+    to: inquiry.email_address,
+    subject: "Chaufeer - We Received Your Request",
+    html: `
+      <h2>Request a Callback</h2>
+      <p>Hello ${inquiry.full_name},</p>
+      <p>Thank you for contacting Chaufeer. We have received your request and will get back to you shortly.</p>
+      <table border="1" cellpadding="8" cellspacing="0">
+        <tr><td><strong>Name</strong></td><td>${inquiry.full_name}</td></tr>
+        <tr><td><strong>Phone</strong></td><td>${inquiry.phone_number}</td></tr>
+        <tr><td><strong>Email</strong></td><td>${inquiry.email_address}</td></tr>
+        <tr><td><strong>Message</strong></td><td>${inquiry.note}</td></tr>
+      </table>
+      <p>Thank you for choosing Chaufeer.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(`Get in touch email sent to ${inquiry.email_address}`);
+};
+
 module.exports = {
   sendBookingConfirmationEmail,
+  sendGetInTouchEmail,
   isEmailConfigured,
 };
