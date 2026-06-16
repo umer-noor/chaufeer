@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
@@ -23,6 +25,11 @@ app.get("/", (req, res) => {
         logout: "POST /api/auth/logout",
         google: "POST /api/auth/signup/google",
         facebook: "POST /api/auth/signup/facebook",
+      },
+      booking: {
+        create: "POST /api/booking/create",
+        get: "GET /api/booking/get",
+        getOne: "GET /api/booking/:id",
       },
     },
   });

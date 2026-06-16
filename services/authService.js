@@ -31,7 +31,7 @@ const signup = async ({ full_name, email, password, phone_number }) => {
     providerId: email,
   });
 
-  return { user, token: generateToken(user._id) };
+  return { user, token: generateToken(user) };
 };
 
 const login = async ({ email, password }) => {
@@ -51,7 +51,7 @@ const login = async ({ email, password }) => {
     throw error;
   }
 
-  return { user, token: generateToken(user._id) };
+  return { user, token: generateToken(user) };
 };
 
 const verifyGoogleToken = async (idToken) => {
@@ -148,14 +148,14 @@ const signupWithGoogle = async (idToken) => {
   const profile = await verifyGoogleToken(idToken);
   const user = await findOrCreateOAuthUser("google", profile);
 
-  return { user, token: generateToken(user._id) };
+  return { user, token: generateToken(user) };
 };
 
 const signupWithFacebook = async (accessToken) => {
   const profile = await verifyFacebookToken(accessToken);
   const user = await findOrCreateOAuthUser("facebook", profile);
 
-  return { user, token: generateToken(user._id) };
+  return { user, token: generateToken(user) };
 };
 
 module.exports = {

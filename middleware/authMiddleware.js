@@ -20,6 +20,7 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "User not found" });
     }
 
+    req.tokenData = decoded;
     next();
   } catch (error) {
     return res.status(401).json({ success: false, message: "Not authorized, token invalid" });

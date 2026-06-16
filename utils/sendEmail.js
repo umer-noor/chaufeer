@@ -1,0 +1,67 @@
+const nodemailer = require("nodemailer");
+
+const isEmailConfigured = () => {
+  return Boolean(
+    process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS
+  );
+};
+
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST.trim(),
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === "true",
+    requireTLS: true,
+    auth: {
+      user: process.env.SMTP_USER.trim(),
+      pass: process.env.SMTP_PASS.trim(),
+    },
+  });
+};
+
+const formatServiceType = (serviceType) => {
+  return serviceType.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const sendBookingConfirmationEmail = async (booking, user) => {
+  if (!isEmailConfigured()) {
+    console.warn("Email not configured. Skipping booking confirmation email.");
+    return;
+  }
+
+  const transporter = createTransporter();
+  const from = process.env.EMAIL_FROM || process.env.SMTP_USER;
+
+  const mailOptions = {
+    from,
+    to: booking.user_email,
+    subject: "Chaufeer - Booking Confirmation",
+    html: `
+      <h2>Booking Confirmed</h2>
+      <p>Hello ${user.full_name || "Customer"},</p>
+      <p>Your ride has been booked successfully.</p>
+      <table border="1" cellpadding="8" cellspacing="0">
+        <tr><td><strong>Service</strong></td><td>${formatServiceType(booking.service_type)}</td></tr>
+        <tr><td><strong>Pick Up</strong></td><td>${booking.pick_up_location}</td></tr>
+        <tr><td><strong>Drop Off</strong></td><td>${booking.drop_off_location}</td></tr>
+        <tr><td><strong>Class</strong></td><td>${booking.class}</td></tr>
+        <tr><td><strong>Date & Time</strong></td><td>${new Date(booking.date_and_time).toLocaleString()}</td></tr>
+        <tr><td><strong>Passengers</strong></td><td>${booking.passengers}</td></tr>
+        <tr><td><strong>Children</strong></td><td>${booking.childs}</td></tr>
+        <tr><td><strong>Email</strong></td><td>${booking.user_email}</td></tr>
+      </table>
+      <p>Thank you for choosing Chaufeer.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(`Booking confirmation email sent to ${booking.user_email}`);
+};
+
+module.exports = {
+  sendBookingConfirmationEmail,
+  isEmailConfigured,
+};
