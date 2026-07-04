@@ -19,7 +19,7 @@ const getInTouch = async (data) => {
 };
 
 const getAllInquiries = async () => {
-  return GetInTouch.find().sort({ createdAt: -1 });
+  return GetInTouch.find().sort({ created_at: -1 });
 };
 
 const getInquiryById = async (id) => {

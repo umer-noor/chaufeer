@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "free-port": "node scripts/free-port.js",
+    "dev": "node scripts/free-port.js && nodemon server.js",
+    "test:api": "node scripts/test-apis.js",
+    "setup": "npm install && node -e \"const fs=require('fs'); if(!fs.existsSync('.env')){fs.copyFileSync('.env.example','.env'); console.log('Created .env from .env.example - update your values and save.');} else {console.log('.env already exists - make sure MONGODB_URI is filled in and saved.');}\"",
     "vercel-build": "echo Build complete"
   },
   "keywords": [],

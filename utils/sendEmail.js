@@ -92,8 +92,38 @@ const sendGetInTouchEmail = async (inquiry) => {
   console.log(`Get in touch email sent to ${inquiry.email_address}`);
 };
 
+const sendOtpEmail = async ({ email, full_name, otp, purpose = "password reset" }) => {
+  if (!isEmailConfigured()) {
+    console.warn("Email not configured. Skipping OTP email.");
+    return;
+  }
+
+  const transporter = createTransporter();
+  const from = process.env.EMAIL_FROM || process.env.SMTP_USER;
+  const expiryMinutes = Number(process.env.OTP_EXPIRES_MINUTES) || 10;
+
+  const mailOptions = {
+    from,
+    to: email,
+    subject: "Chaufeer - Verification Code",
+    html: `
+      <h2>Your Verification Code</h2>
+      <p>Hello ${full_name || "User"},</p>
+      <p>Use the following 6-digit code for ${purpose}:</p>
+      <p style="font-size: 28px; font-weight: bold; letter-spacing: 6px;">${otp}</p>
+      <p>This code expires in ${expiryMinutes} minutes.</p>
+      <p>If you did not request this, please ignore this email.</p>
+      <p>Thank you,<br/>Chaufeer Team</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(`OTP email sent to ${email}`);
+};
+
 module.exports = {
   sendBookingConfirmationEmail,
   sendGetInTouchEmail,
+  sendOtpEmail,
   isEmailConfigured,
 };

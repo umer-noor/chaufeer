@@ -54,9 +54,49 @@ const bookingSchema = new mongoose.Schema(
       required: [true, "Childs is required"],
       min: [0, "Childs cannot be negative"],
     },
+    amount: {
+      type: Number,
+      min: [0, "Amount cannot be negative"],
+    },
+    currency: {
+      type: String,
+      default: "QAR",
+      trim: true,
+    },
+    payment_status: {
+      type: String,
+      enum: ["pending", "paid", "failed"],
+      default: "pending",
+    },
+    fatora_order_id: {
+      type: String,
+      trim: true,
+    },
+    fatora_transaction_id: {
+      type: String,
+      trim: true,
+    },
+    fatora_checkout_url: {
+      type: String,
+      trim: true,
+    },
+    payment_response_code: {
+      type: String,
+      trim: true,
+    },
+    payment_description: {
+      type: String,
+      trim: true,
+    },
+    paid_at: {
+      type: Date,
+    },
   },
   {
-    timestamps: true,
+    timestamps: {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
   }
 );
 

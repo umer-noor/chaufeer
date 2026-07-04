@@ -35,33 +35,44 @@ const userSchema = new mongoose.Schema(
       enum: ["local", "google", "facebook"],
       default: "local",
     },
-    providerId: {
+    provider_id: {
       type: String,
       default: null,
     },
+    reset_password_otp: {
+      type: String,
+      select: false,
+    },
+    reset_password_otp_expires: {
+      type: Date,
+      select: false,
+    },
+    is_email_verified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
-    timestamps: true,
+    timestamps: {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
   }
 );
 
-userSchema.index({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
-
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password") || !this.password) {
-    return next();
-  }
-
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+userSchema.index({ provider: 1, provider_id: 1 }, { unique: true, sparse: true });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) {
     return false;
   }
 
-  return bcrypt.compare(candidatePassword, this.password);
+  // Support existing bcrypt-hashed passwords until they are reset
+  if (this.password.startsWith("$2a$") || this.password.startsWith("$2b$")) {
+    return bcrypt.compare(candidatePassword, this.password);
+  }
+
+  return this.password === candidatePassword;
 };
 
 module.exports = mongoose.model("User", userSchema);

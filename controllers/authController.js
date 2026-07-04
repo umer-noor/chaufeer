@@ -6,6 +6,7 @@ const formatUser = (user) => ({
   email: user.email,
   phone_number: user.phone_number || null,
   provider: user.provider,
+  is_email_verified: user.is_email_verified || false,
 });
 
 const signup = async (req, res, next) => {
@@ -61,13 +62,13 @@ const login = async (req, res, next) => {
 
 const googleSignup = async (req, res, next) => {
   try {
-    const { idToken } = req.body;
+    const { id_token } = req.body;
 
-    if (!idToken) {
-      return res.status(400).json({ success: false, message: "idToken is required" });
+    if (!id_token) {
+      return res.status(400).json({ success: false, message: "id_token is required" });
     }
 
-    const { user, token } = await authService.signupWithGoogle(idToken);
+    const { user, token } = await authService.signupWithGoogle(id_token);
 
     res.status(200).json({
       success: true,
@@ -81,13 +82,13 @@ const googleSignup = async (req, res, next) => {
 
 const facebookSignup = async (req, res, next) => {
   try {
-    const { accessToken } = req.body;
+    const { access_token } = req.body;
 
-    if (!accessToken) {
-      return res.status(400).json({ success: false, message: "accessToken is required" });
+    if (!access_token) {
+      return res.status(400).json({ success: false, message: "access_token is required" });
     }
 
-    const { user, token } = await authService.signupWithFacebook(accessToken);
+    const { user, token } = await authService.signupWithFacebook(access_token);
 
     res.status(200).json({
       success: true,
@@ -106,10 +107,139 @@ const logout = async (req, res) => {
   });
 };
 
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "email is required",
+      });
+    }
+
+    const result = await authService.sendPasswordResetOtp(email);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent to your email",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || otp === undefined || otp === null || otp === "") {
+      return res.status(400).json({
+        success: false,
+        message: "email and otp are required",
+      });
+    }
+
+    const result = await authService.verifyOtp({ email, otp });
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, new_password } = req.body;
+
+    if (!email || otp === undefined || otp === null || otp === "" || !new_password) {
+      return res.status(400).json({
+        success: false,
+        message: "email, otp, and new_password are required",
+      });
+    }
+
+    const user = await authService.resetPassword({ email, otp, new_password });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+      data: { user: formatUser(user) },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await authService.getProfile(req.user._id);
+
+    res.status(200).json({
+      success: true,
+      data: formatUser(user),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateProfile = async (req, res, next) => {
+  try {
+    const { full_name, phone_number } = req.body;
+
+    if (full_name === undefined && phone_number === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one of full_name or phone_number is required",
+      });
+    }
+
+    const user = await authService.updateProfile(req.user._id, {
+      full_name,
+      phone_number,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: formatUser(user),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteAccount = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+
+    await authService.deleteAccount(req.user._id, password);
+
+    res.status(200).json({
+      success: true,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   signup,
   login,
   googleSignup,
   facebookSignup,
   logout,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
+  getProfile,
+  updateProfile,
+  deleteAccount,
 };

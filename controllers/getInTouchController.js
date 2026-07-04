@@ -6,8 +6,8 @@ const formatInquiry = (inquiry) => ({
   phone_number: inquiry.phone_number,
   email_address: inquiry.email_address,
   note: inquiry.note,
-  createdAt: inquiry.createdAt,
-  updatedAt: inquiry.updatedAt,
+  created_at: inquiry.created_at,
+  updated_at: inquiry.updated_at,
 });
 
 const getInTouch = async (req, res, next) => {

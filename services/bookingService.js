@@ -11,7 +11,7 @@ const createBooking = async (user, bookingData) => {
     throw error;
   }
 
-  const booking = await Booking.create({
+  const bookingPayload = {
     user: user._id,
     user_email: user.email,
     service_type: bookingData.service_type,
@@ -21,19 +21,32 @@ const createBooking = async (user, bookingData) => {
     date_and_time: bookingData.date_and_time,
     passengers: bookingData.passengers,
     childs: bookingData.childs,
-  });
+  };
 
-  try {
-    await sendBookingConfirmationEmail(booking, user);
-  } catch (error) {
-    console.error("Booking email failed:", error.message);
+  if (bookingData.amount !== undefined && bookingData.amount !== null) {
+    bookingPayload.amount = Number(bookingData.amount);
+    bookingPayload.currency =
+      bookingData.currency || process.env.FATORA_CURRENCY || "QAR";
+    bookingPayload.payment_status = "pending";
+  }
+
+  const booking = await Booking.create(bookingPayload);
+
+  const shouldSendEmailNow = bookingPayload.amount === undefined;
+
+  if (shouldSendEmailNow) {
+    try {
+      await sendBookingConfirmationEmail(booking, user);
+    } catch (error) {
+      console.error("Booking email failed:", error.message);
+    }
   }
 
   return booking;
 };
 
 const getBookingsByUser = async (userId) => {
-  return Booking.find({ user: userId }).sort({ createdAt: -1 });
+  return Booking.find({ user: userId }).sort({ created_at: -1 });
 };
 
 const getBookingById = async (bookingId, userId) => {

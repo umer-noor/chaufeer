@@ -12,16 +12,18 @@ const connectDB = async () => {
   }
 
   if (!cached.promise) {
-    const uri = process.env.MONGODB_URI;
+    const uri = process.env.MONGODB_URI?.trim();
 
     if (!uri) {
-      throw new Error("MONGODB_URI is not defined in environment variables");
+      throw new Error(
+        "MONGODB_URI is missing or empty. Copy .env.example to .env, add your MongoDB connection string, and save the file."
+      );
     }
 
     cached.promise = mongoose
       .connect(uri)
       .then((mongooseInstance) => {
-        console.log(`MongoDB connected: ${mongooseInstance.connection.host}`);
+        console.log(`MongoDB connected`);
         return mongooseInstance;
       })
       .catch((error) => {

@@ -1,7 +1,7 @@
 const User = require("../models/User");
 
 const getAllUsers = async () => {
-  return User.find().select("-password").sort({ createdAt: -1 });
+  return User.find().select("-password").sort({ created_at: -1 });
 };
 
 const getUserById = async (id) => {

@@ -1,5 +1,19 @@
 {
-  "watch": ["."],
+  "watch": [
+    "server.js",
+    "app.js",
+    "appRoute.js",
+    "config",
+    "controllers",
+    "middleware",
+    "models",
+    "routes",
+    "services",
+    "utils",
+    "api"
+  ],
   "ext": "js,json",
-  "ignore": ["node_modules", ".git"]
+  "ignore": ["node_modules", ".git", ".env", ".env.*", "logs"],
+  "delay": 1500,
+  "signal": "SIGTERM"
 }
