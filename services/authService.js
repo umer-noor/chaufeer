@@ -36,7 +36,6 @@ const signup = async ({ full_name, email, password, phone_number }) => {
     password,
     phone_number,
     provider: "local",
-    provider_id: email,
   });
 
   return { user, token: generateToken(user) };

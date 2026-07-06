@@ -60,7 +60,17 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.index({ provider: 1, provider_id: 1 }, { unique: true, sparse: true });
+// OAuth only — local users are unique by email; avoid null provider_id collisions
+userSchema.index(
+  { provider: 1, provider_id: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      provider: { $in: ["google", "facebook"] },
+      provider_id: { $exists: true, $type: "string" },
+    },
+  }
+);
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) {
