@@ -116,18 +116,39 @@ const req = async (name, method, path, { body, auth = false, publicRoute = false
   r = await req("Create Booking", "POST", "/booking/create", {
     auth: true,
     body: {
-      service_type: "airport_transfer",
-      pick_up_location: "Hamad Airport",
-      drop_off_location: "Doha City",
-      class: "Business",
-      date_and_time: "2026-08-01T10:00:00.000Z",
-      passengers: 2,
-      childs: 0,
+      service_type: "hourly_service",
+      fleet_id: ids.fleet,
+      pickup_location: "Karachi Airport",
+      pickup_latitude: 24.9065,
+      pickup_longitude: 67.1608,
+      dropoff_location: "Clifton Block 5",
+      dropoff_latitude: 24.8138,
+      dropoff_longitude: 67.03,
+      pickup_date: "2026-08-01",
+      pickup_time: "10:30",
+      passengers_count: 2,
+      children_count: 0,
+      hours: 4,
+      passenger_name: "API Tester",
+      passenger_email: EMAIL,
+      phone_number: "+97412345678",
+      payment_method: "cash",
+      special_requests: "Need child seat",
+      addons: ["kids_chairs", "internet"],
       amount: 100,
       currency: "QAR",
     },
   });
   ids.booking = r.data?.data?.id;
+
+  if (ids.booking) {
+    await req("Update Booking", "PUT", `/booking/${ids.booking}`, {
+      auth: true,
+      body: { pickup_time: "11:00", passengers_count: 3 },
+    });
+    await req("Cancel Booking", "PUT", `/booking/${ids.booking}/cancel`, { auth: true });
+  }
+
   await req("Get Bookings", "GET", "/booking/get", { auth: true });
 
   r = await req("Get In Touch", "POST", "/get_in_touch/create", {

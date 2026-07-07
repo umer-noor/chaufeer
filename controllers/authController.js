@@ -20,7 +20,7 @@ const signup = async (req, res, next) => {
       });
     }
 
-    const { user, token } = await authService.signup({
+    const result = await authService.signup({
       full_name,
       email,
       password,
@@ -29,8 +29,11 @@ const signup = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Signup successful",
-      data: { user: formatUser(user), token },
+      message: "OTP sent to your email. Verify to activate your account.",
+      data: {
+        user: formatUser(result.user),
+        requires_verification: true,
+      },
     });
   } catch (error) {
     next(error);
@@ -153,6 +156,52 @@ const verifyOtp = async (req, res, next) => {
   }
 };
 
+const verifySignupOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || otp === undefined || otp === null || otp === "") {
+      return res.status(400).json({
+        success: false,
+        message: "email and otp are required",
+      });
+    }
+
+    const { user, token } = await authService.verifySignupOtp({ email, otp });
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+      data: { user: formatUser(user), token },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendSignupOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "email is required",
+      });
+    }
+
+    const result = await authService.resendSignupOtp(email);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP resent to your email",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const resetPassword = async (req, res, next) => {
   try {
     const { email, otp, new_password } = req.body;
@@ -238,6 +287,8 @@ module.exports = {
   logout,
   forgotPassword,
   verifyOtp,
+  verifySignupOtp,
+  resendSignupOtp,
   resetPassword,
   getProfile,
   updateProfile,

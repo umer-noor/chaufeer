@@ -7,6 +7,9 @@ const SERVICE_TYPES = [
   "daily_service",
 ];
 
+const PAYMENT_METHODS = ["cash", "card", "paypal"];
+const BOOKING_STATUSES = ["pending", "confirmed", "cancelled", "completed"];
+
 const bookingSchema = new mongoose.Schema(
   {
     user: {
@@ -25,34 +28,105 @@ const bookingSchema = new mongoose.Schema(
       enum: SERVICE_TYPES,
       required: [true, "Service type is required"],
     },
-    pick_up_location: {
+    fleet_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Fleet",
+      default: null,
+    },
+    fleet_name: {
       type: String,
-      required: [true, "Pick up location is required"],
+      trim: true,
+      default: "",
+    },
+    pickup_location: {
+      type: String,
+      required: [true, "Pickup location is required"],
       trim: true,
     },
-    drop_off_location: {
+    pickup_latitude: {
+      type: Number,
+      default: null,
+    },
+    pickup_longitude: {
+      type: Number,
+      default: null,
+    },
+    dropoff_location: {
       type: String,
-      required: [true, "Drop off location is required"],
+      required: [true, "Dropoff location is required"],
       trim: true,
     },
-    class: {
+    dropoff_latitude: {
+      type: Number,
+      default: null,
+    },
+    dropoff_longitude: {
+      type: Number,
+      default: null,
+    },
+    pickup_date: {
       type: String,
-      required: [true, "Class is required"],
       trim: true,
+      default: "",
+    },
+    pickup_time: {
+      type: String,
+      trim: true,
+      default: "",
     },
     date_and_time: {
       type: Date,
-      required: [true, "Date and time is required"],
+      default: null,
     },
-    passengers: {
+    passengers_count: {
       type: Number,
-      required: [true, "Passengers is required"],
-      min: [0, "Passengers cannot be negative"],
+      required: [true, "Passengers count is required"],
+      min: [0, "Passengers count cannot be negative"],
     },
-    childs: {
+    children_count: {
       type: Number,
-      required: [true, "Childs is required"],
-      min: [0, "Childs cannot be negative"],
+      default: 0,
+      min: [0, "Children count cannot be negative"],
+    },
+    hours: {
+      type: Number,
+      default: null,
+      min: [0, "Hours cannot be negative"],
+    },
+    passenger_name: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    passenger_email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      default: "",
+    },
+    phone_number: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    special_requests: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    payment_method: {
+      type: String,
+      enum: PAYMENT_METHODS,
+      default: "cash",
+    },
+    addons: {
+      type: [String],
+      default: [],
+    },
+    booking_status: {
+      type: String,
+      enum: BOOKING_STATUSES,
+      default: "confirmed",
     },
     amount: {
       type: Number,
@@ -102,3 +176,5 @@ const bookingSchema = new mongoose.Schema(
 
 module.exports = mongoose.model("Booking", bookingSchema);
 module.exports.SERVICE_TYPES = SERVICE_TYPES;
+module.exports.PAYMENT_METHODS = PAYMENT_METHODS;
+module.exports.BOOKING_STATUSES = BOOKING_STATUSES;

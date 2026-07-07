@@ -21,10 +21,41 @@ const getGoogleClientIds = () => {
   ].filter(Boolean);
 };
 
+const sendSignupOtpToUser = async (user) => {
+  const otp = generateOtp();
+  user.signup_otp = await hashOtp(otp);
+  user.signup_otp_expires = getOtpExpiryDate();
+  await user.save();
+
+  await sendOtpEmail({
+    email: user.email,
+    full_name: user.full_name,
+    otp,
+    purpose: "email verification",
+  });
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[DEV] Signup OTP for ${user.email}: ${otp}`);
+  }
+
+  return { email: user.email };
+};
+
+const findLocalUserForSignupOtp = async (email) => {
+  return User.findOne({ email: email.toLowerCase().trim(), provider: "local" }).select(
+    "+signup_otp +signup_otp_expires"
+  );
+};
+
 const signup = async ({ full_name, email, password, phone_number }) => {
-  const existingUser = await User.findOne({ email });
+  const existingUser = await findLocalUserForSignupOtp(email);
 
   if (existingUser) {
+    if (!existingUser.is_email_verified) {
+      await sendSignupOtpToUser(existingUser);
+      return { user: existingUser, otp_sent: true, requires_verification: true };
+    }
+
     const error = new Error("Email already registered");
     error.statusCode = 400;
     throw error;
@@ -36,9 +67,12 @@ const signup = async ({ full_name, email, password, phone_number }) => {
     password,
     phone_number,
     provider: "local",
+    is_email_verified: false,
   });
 
-  return { user, token: generateToken(user) };
+  await sendSignupOtpToUser(user);
+
+  return { user, otp_sent: true, requires_verification: true };
 };
 
 const login = async ({ email, password }) => {
@@ -56,6 +90,19 @@ const login = async ({ email, password }) => {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;
     throw error;
+  }
+
+  if (!user.is_email_verified) {
+    const userWithOtp = await User.findById(user._id).select("+signup_otp");
+
+    if (userWithOtp?.signup_otp) {
+      const error = new Error("Please verify your email with OTP before logging in");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    user.is_email_verified = true;
+    await user.save();
   }
 
   return { user, token: generateToken(user) };
@@ -128,6 +175,7 @@ const findOrCreateOAuthUser = async (provider, profile) => {
 
   if (user) {
     user.full_name = profile.full_name;
+    user.is_email_verified = true;
     if (profile.email && user.email.endsWith("@oauth.local")) {
       user.email = profile.email;
     }
@@ -148,6 +196,7 @@ const findOrCreateOAuthUser = async (provider, profile) => {
     email: profile.email,
     provider,
     provider_id: profile.provider_id,
+    is_email_verified: true,
   });
 };
 
@@ -239,6 +288,73 @@ const verifyOtp = async ({ email, otp }) => {
   return { email: user.email, verified: true };
 };
 
+const verifySignupOtp = async ({ email, otp }) => {
+  if (!isValidOtpFormat(otp)) {
+    const error = new Error("OTP must be a 6-digit number");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await findLocalUserForSignupOtp(email);
+
+  if (!user) {
+    const error = new Error("No account found with this email");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (user.is_email_verified) {
+    return { user, token: generateToken(user), already_verified: true };
+  }
+
+  if (!user.signup_otp || !user.signup_otp_expires) {
+    const error = new Error("No OTP found. Call POST /api/auth/resend-signup-otp first.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (user.signup_otp_expires < new Date()) {
+    const error = new Error("OTP has expired. Please request a new one");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const isOtpValid = await compareOtp(otp, user.signup_otp);
+
+  if (!isOtpValid) {
+    const error = new Error("Invalid OTP");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  user.is_email_verified = true;
+  user.signup_otp = undefined;
+  user.signup_otp_expires = undefined;
+  await user.save();
+
+  return { user, token: generateToken(user) };
+};
+
+const resendSignupOtp = async (email) => {
+  const user = await findLocalUserForSignupOtp(email);
+
+  if (!user) {
+    const error = new Error("No account found with this email");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (user.is_email_verified) {
+    const error = new Error("Email is already verified");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  await sendSignupOtpToUser(user);
+
+  return { email: user.email };
+};
+
 const resetPassword = async ({ email, otp, new_password }) => {
   if (!new_password || new_password.length < 6) {
     const error = new Error("new_password must be at least 6 characters");
@@ -326,6 +442,8 @@ module.exports = {
   signupWithFacebook,
   sendPasswordResetOtp,
   verifyOtp,
+  verifySignupOtp,
+  resendSignupOtp,
   resetPassword,
   getProfile,
   updateProfile,

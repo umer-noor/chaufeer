@@ -1,0 +1,314 @@
+================================================================================
+CHAUFFEUR API DOCUMENTATION (UPDATED)
+================================================================================
+Base URL: https://chaufeer.vercel.app/api
+
+Headers (protected routes):
+  Authorization: Bearer <token>
+  Content-Type: application/json
+
+================================================================================
+AUTH - SIGNUP WITH OTP
+================================================================================
+
+1) SIGNUP (sends OTP, no token until verified)
+POST: https://chaufeer.vercel.app/api/auth/signup
+Auth: Public
+
+Request:
+{
+  "full_name": "Ali Khan",
+  "email": "ali@email.com",
+  "password": "password123",
+  "phone_number": "+923001234567"
+}
+
+Response (201):
+{
+  "success": true,
+  "message": "OTP sent to your email. Verify to activate your account.",
+  "data": {
+    "user": {
+      "id": "USER_ID",
+      "full_name": "Ali Khan",
+      "email": "ali@email.com",
+      "phone_number": "+923001234567",
+      "provider": "local",
+      "is_email_verified": false
+    },
+    "requires_verification": true
+  }
+}
+
+2) VERIFY SIGNUP OTP (activates account + returns token)
+POST: https://chaufeer.vercel.app/api/auth/verify-signup-otp
+Auth: Public
+
+Request:
+{
+  "email": "ali@email.com",
+  "otp": "123456"
+}
+
+Response (200):
+{
+  "success": true,
+  "message": "Email verified successfully",
+  "data": {
+    "user": { ... },
+    "token": "JWT_TOKEN"
+  }
+}
+
+3) RESEND SIGNUP OTP
+POST: https://chaufeer.vercel.app/api/auth/resend-signup-otp
+Auth: Public
+
+Request:
+{
+  "email": "ali@email.com"
+}
+
+Response (200):
+{
+  "success": true,
+  "message": "OTP resent to your email",
+  "data": { "email": "ali@email.com" }
+}
+
+4) LOGIN (blocked until email verified)
+POST: https://chaufeer.vercel.app/api/auth/login
+Auth: Public
+
+Request:
+{
+  "email": "ali@email.com",
+  "password": "password123"
+}
+
+Response (403 if not verified):
+{
+  "success": false,
+  "message": "Please verify your email with OTP before logging in"
+}
+
+================================================================================
+AUTH - FORGOT / RESET PASSWORD
+================================================================================
+
+POST: https://chaufeer.vercel.app/api/auth/forgot-password
+POST: https://chaufeer.vercel.app/api/auth/verify-otp
+POST: https://chaufeer.vercel.app/api/auth/reset-password
+
+(Same as before - see previous sections)
+
+================================================================================
+AUTH - PROFILE
+================================================================================
+
+GET:  https://chaufeer.vercel.app/api/auth/profile
+PUT:  https://chaufeer.vercel.app/api/auth/profile
+DELETE: https://chaufeer.vercel.app/api/auth/delete-account
+Auth: Required
+
+PUT /profile Request:
+{
+  "full_name": "Updated Name",
+  "phone_number": "+923001234567"
+}
+
+================================================================================
+BOOKING - CREATE
+================================================================================
+
+POST: https://chaufeer.vercel.app/api/booking/create
+Auth: Required
+
+Request:
+{
+  "service_type": "hourly_service",
+  "fleet_id": "FLEET_OBJECT_ID",
+  "pickup_location": "Karachi Airport",
+  "pickup_latitude": 24.9065,
+  "pickup_longitude": 67.1608,
+  "dropoff_location": "Clifton Block 5",
+  "dropoff_latitude": 24.8138,
+  "dropoff_longitude": 67.0300,
+  "pickup_date": "2026-06-20",
+  "pickup_time": "10:30",
+  "passengers_count": 2,
+  "children_count": 0,
+  "hours": 4,
+  "passenger_name": "Ali Khan",
+  "passenger_email": "ali@email.com",
+  "phone_number": "+923001234567",
+  "payment_method": "cash",
+  "special_requests": "Need child seat",
+  "addons": ["kids_chairs", "internet"]
+}
+
+service_type values: airport_transfer | a_to_b_transfer | hourly_service | daily_service
+payment_method values: cash | card | paypal
+addons examples: kids_chairs, internet
+
+Response (201):
+{
+  "success": true,
+  "message": "Booking created successfully",
+  "data": {
+    "id": "BOOKING_ID",
+    "service_type": "hourly_service",
+    "fleet_id": "FLEET_OBJECT_ID",
+    "fleet_name": "Mercedes S-Class",
+    "fleet": { "id": "...", "vehicle_name": "...", "vehicle_type": "...", "category": "...", "image_url": "..." },
+    "pickup_location": "Karachi Airport",
+    "pickup_latitude": 24.9065,
+    "pickup_longitude": 67.1608,
+    "dropoff_location": "Clifton Block 5",
+    "dropoff_latitude": 24.8138,
+    "dropoff_longitude": 67.03,
+    "pickup_date": "2026-06-20",
+    "pickup_time": "10:30",
+    "date_and_time": "2026-06-20T10:30:00.000Z",
+    "passengers_count": 2,
+    "children_count": 0,
+    "hours": 4,
+    "passenger_name": "Ali Khan",
+    "passenger_email": "ali@email.com",
+    "phone_number": "+923001234567",
+    "payment_method": "cash",
+    "special_requests": "Need child seat",
+    "addons": ["kids_chairs", "internet"],
+    "booking_status": "confirmed",
+    "amount": null,
+    "currency": "QAR",
+    "payment_status": "pending",
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+
+Required fields: service_type, pickup_location, dropoff_location, passengers_count
+
+================================================================================
+BOOKING - GET LIST
+================================================================================
+
+GET: https://chaufeer.vercel.app/api/booking/get
+Auth: Required
+
+Request: No body
+
+Response (200):
+{
+  "success": true,
+  "count": 1,
+  "data": [ { ...booking object... } ]
+}
+
+================================================================================
+BOOKING - GET ONE
+================================================================================
+
+GET: https://chaufeer.vercel.app/api/booking/:id
+Auth: Required
+
+================================================================================
+BOOKING - UPDATE
+================================================================================
+
+PUT: https://chaufeer.vercel.app/api/booking/:id
+Auth: Required
+
+Request (send fields to update):
+{
+  "pickup_location": "New Pickup Address",
+  "pickup_latitude": 24.9000,
+  "pickup_longitude": 67.1500,
+  "dropoff_location": "New Dropoff Address",
+  "dropoff_latitude": 24.8100,
+  "dropoff_longitude": 67.0200,
+  "pickup_date": "2026-06-21",
+  "pickup_time": "14:00",
+  "passengers_count": 3,
+  "children_count": 1,
+  "fleet_id": "NEW_FLEET_ID",
+  "hours": 5,
+  "passenger_name": "Ali Khan",
+  "passenger_email": "ali@email.com",
+  "phone_number": "+923001234567",
+  "special_requests": "Updated request",
+  "payment_method": "card",
+  "addons": ["internet"]
+}
+
+Response (200):
+{
+  "success": true,
+  "message": "Booking updated successfully",
+  "data": { ...updated booking... }
+}
+
+Note: Cannot update cancelled or completed bookings.
+
+================================================================================
+BOOKING - CANCEL
+================================================================================
+
+PUT: https://chaufeer.vercel.app/api/booking/:id/cancel
+Auth: Required
+Request: No body
+
+Response (200):
+{
+  "success": true,
+  "message": "Booking cancelled successfully",
+  "data": {
+    "id": "BOOKING_ID",
+    "booking_status": "cancelled",
+    ...
+  }
+}
+
+================================================================================
+FLEET (PUBLIC GET)
+================================================================================
+
+GET:  https://chaufeer.vercel.app/api/fleet/get
+GET:  https://chaufeer.vercel.app/api/fleet/:id
+POST: https://chaufeer.vercel.app/api/fleet/create (admin, token required)
+
+================================================================================
+FLEET DETAILS (PUBLIC GET)
+================================================================================
+
+GET:  https://chaufeer.vercel.app/api/fleet_detail/get
+GET:  https://chaufeer.vercel.app/api/fleet_detail/:id
+
+================================================================================
+SERVICE COVERAGE (PUBLIC GET)
+================================================================================
+
+GET: https://chaufeer.vercel.app/api/service_coverage/get?section_type=featured
+
+================================================================================
+CUSTOMER REVIEW (PUBLIC GET)
+================================================================================
+
+GET: https://chaufeer.vercel.app/api/customer_review/get
+
+================================================================================
+QUICK FLOW SUMMARY
+================================================================================
+
+Signup flow:
+  1. POST /auth/signup
+  2. POST /auth/verify-signup-otp  (or POST /auth/resend-signup-otp if needed)
+  3. POST /auth/login
+
+Booking flow:
+  1. POST /booking/create
+  2. PUT  /booking/:id         (edit upcoming booking)
+  3. PUT  /booking/:id/cancel  (cancel booking)
+
+================================================================================

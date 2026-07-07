@@ -10,6 +10,8 @@ router.post("/login", authController.login);
 router.post("/logout", authController.logout);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/verify-otp", authController.verifyOtp);
+router.post("/verify-signup-otp", authController.verifySignupOtp);
+router.post("/resend-signup-otp", authController.resendSignupOtp);
 router.post("/reset-password", authController.resetPassword);
 router.get("/profile", authController.getProfile);
 router.put("/profile", authController.updateProfile);

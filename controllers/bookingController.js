@@ -1,16 +1,50 @@
 const bookingService = require("../services/bookingService");
 const paymentService = require("../services/paymentService");
 
+const formatFleetRef = (fleet) => {
+  if (!fleet) {
+    return null;
+  }
+
+  if (typeof fleet === "string") {
+    return { id: fleet };
+  }
+
+  return {
+    id: fleet._id,
+    vehicle_name: fleet.vehicle_name,
+    vehicle_type: fleet.vehicle_type,
+    category: fleet.category,
+    image_url: fleet.image_url,
+  };
+};
+
 const formatBooking = (booking) => ({
   id: booking._id,
   user_email: booking.user_email,
   service_type: booking.service_type,
-  pick_up_location: booking.pick_up_location,
-  drop_off_location: booking.drop_off_location,
-  class: booking.class,
-  date_and_time: booking.date_and_time,
-  passengers: booking.passengers,
-  childs: booking.childs,
+  fleet_id: booking.fleet_id?._id || booking.fleet_id || null,
+  fleet_name: booking.fleet_name || "",
+  fleet: formatFleetRef(booking.fleet_id),
+  pickup_location: booking.pickup_location,
+  pickup_latitude: booking.pickup_latitude ?? null,
+  pickup_longitude: booking.pickup_longitude ?? null,
+  dropoff_location: booking.dropoff_location,
+  dropoff_latitude: booking.dropoff_latitude ?? null,
+  dropoff_longitude: booking.dropoff_longitude ?? null,
+  pickup_date: booking.pickup_date || "",
+  pickup_time: booking.pickup_time || "",
+  date_and_time: booking.date_and_time || null,
+  passengers_count: booking.passengers_count,
+  children_count: booking.children_count ?? 0,
+  hours: booking.hours ?? null,
+  passenger_name: booking.passenger_name || "",
+  passenger_email: booking.passenger_email || "",
+  phone_number: booking.phone_number || "",
+  special_requests: booking.special_requests || "",
+  payment_method: booking.payment_method || "cash",
+  addons: booking.addons || [],
+  booking_status: booking.booking_status || "confirmed",
   amount: booking.amount ?? null,
   currency: booking.currency || "QAR",
   payment_status: booking.payment_status || "pending",
@@ -25,45 +59,7 @@ const formatBooking = (booking) => ({
 
 const createBooking = async (req, res, next) => {
   try {
-    const {
-      service_type,
-      pick_up_location,
-      drop_off_location,
-      class: fleetClass,
-      date_and_time,
-      passengers,
-      childs,
-      amount,
-      currency,
-    } = req.body;
-
-    if (
-      !service_type ||
-      !pick_up_location ||
-      !drop_off_location ||
-      !fleetClass ||
-      !date_and_time ||
-      passengers === undefined ||
-      childs === undefined
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "service_type, pick_up_location, drop_off_location, class, date_and_time, passengers, and childs are required",
-      });
-    }
-
-    const booking = await bookingService.createBooking(req.user, {
-      service_type,
-      pick_up_location,
-      drop_off_location,
-      class: fleetClass,
-      date_and_time,
-      passengers,
-      childs,
-      amount,
-      currency,
-    });
+    const booking = await bookingService.createBooking(req.user, req.body);
 
     res.status(201).json({
       success: true,
@@ -106,10 +102,44 @@ const getBooking = async (req, res, next) => {
   }
 };
 
+const updateBooking = async (req, res, next) => {
+  try {
+    const booking = await bookingService.updateBooking(
+      req.params.id,
+      req.user._id,
+      req.body
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Booking updated successfully",
+      data: formatBooking(booking),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cancelBooking = async (req, res, next) => {
+  try {
+    const booking = await bookingService.cancelBooking(req.params.id, req.user._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking cancelled successfully",
+      data: formatBooking(booking),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createBooking,
   getBookings,
   getBooking,
+  updateBooking,
+  cancelBooking,
   initiatePayment: async (req, res, next) => {
     try {
       const { amount, currency, language } = req.body;

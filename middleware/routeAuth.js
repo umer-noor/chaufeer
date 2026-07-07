@@ -8,6 +8,8 @@ const exactPublicRoutes = [
   ["POST", "/auth/signup/facebook"],
   ["POST", "/auth/forgot-password"],
   ["POST", "/auth/verify-otp"],
+  ["POST", "/auth/verify-signup-otp"],
+  ["POST", "/auth/resend-signup-otp"],
   ["POST", "/auth/reset-password"],
   ["GET", "/booking/payment/webhook"],
   ["POST", "/get_in_touch/create"],

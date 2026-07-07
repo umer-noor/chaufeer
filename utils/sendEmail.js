@@ -45,12 +45,12 @@ const sendBookingConfirmationEmail = async (booking, user) => {
       <p>Your ride has been booked successfully.</p>
       <table border="1" cellpadding="8" cellspacing="0">
         <tr><td><strong>Service</strong></td><td>${formatServiceType(booking.service_type)}</td></tr>
-        <tr><td><strong>Pick Up</strong></td><td>${booking.pick_up_location}</td></tr>
-        <tr><td><strong>Drop Off</strong></td><td>${booking.drop_off_location}</td></tr>
-        <tr><td><strong>Class</strong></td><td>${booking.class}</td></tr>
+        <tr><td><strong>Pick Up</strong></td><td>${booking.pickup_location || booking.pick_up_location}</td></tr>
+        <tr><td><strong>Drop Off</strong></td><td>${booking.dropoff_location || booking.drop_off_location}</td></tr>
+        <tr><td><strong>Vehicle</strong></td><td>${booking.fleet_name || booking.class || "-"}</td></tr>
         <tr><td><strong>Date & Time</strong></td><td>${new Date(booking.date_and_time).toLocaleString()}</td></tr>
-        <tr><td><strong>Passengers</strong></td><td>${booking.passengers}</td></tr>
-        <tr><td><strong>Children</strong></td><td>${booking.childs}</td></tr>
+        <tr><td><strong>Passengers</strong></td><td>${booking.passengers_count ?? booking.passengers ?? 0}</td></tr>
+        <tr><td><strong>Children</strong></td><td>${booking.children_count ?? booking.childs ?? 0}</td></tr>
         <tr><td><strong>Email</strong></td><td>${booking.user_email}</td></tr>
       </table>
       <p>Thank you for choosing Chaufeer.</p>
