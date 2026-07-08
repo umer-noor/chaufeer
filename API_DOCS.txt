@@ -76,7 +76,7 @@ Response (200):
   "data": { "email": "ali@email.com" }
 }
 
-4) LOGIN (blocked until email verified)
+4) LOGIN (blocked until email verified for users; admins can login directly)
 POST: https://chaufeer.vercel.app/api/auth/login
 Auth: Public
 
@@ -86,11 +86,47 @@ Request:
   "password": "password123"
 }
 
-Response (403 if not verified):
+Response (200):
 {
-  "success": false,
-  "message": "Please verify your email with OTP before logging in"
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "USER_ID",
+      "full_name": "Ali Khan",
+      "email": "ali@email.com",
+      "phone_number": "+923001234567",
+      "provider": "local",
+      "is_email_verified": true,
+      "role": "user"
+    },
+    "token": "JWT_TOKEN"
+  }
 }
+
+role values: user | admin
+(UI can check user.role after login — no permission middleware yet)
+
+================================================================================
+ADMIN LOGIN ACCOUNTS (for UI developer)
+================================================================================
+
+Admin 1:
+POST: https://chaufeer.vercel.app/api/auth/login
+{
+  "email": "admin@chaufeer.com",
+  "password": "Admin@123"
+}
+
+Admin 2:
+POST: https://chaufeer.vercel.app/api/auth/login
+{
+  "email": "admin2@chaufeer.com",
+  "password": "Admin@123"
+}
+
+Response includes role: "admin"
+No OTP required for admin login.
 
 ================================================================================
 AUTH - FORGOT / RESET PASSWORD

@@ -59,6 +59,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
   },
   {
     timestamps: {
@@ -94,3 +99,4 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 module.exports = mongoose.model("User", userSchema);
+module.exports.ROLES = ["user", "admin"];

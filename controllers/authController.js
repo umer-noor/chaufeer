@@ -7,6 +7,7 @@ const formatUser = (user) => ({
   phone_number: user.phone_number || null,
   provider: user.provider,
   is_email_verified: user.is_email_verified || false,
+  role: user.role || "user",
 });
 
 const signup = async (req, res, next) => {

@@ -8,6 +8,7 @@ const generateToken = (user) => {
       full_name: user.full_name,
       phone_number: user.phone_number || null,
       provider: user.provider,
+      role: user.role || "user",
     },
     process.env.JWT_SECRET,
     {

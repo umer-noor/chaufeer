@@ -68,6 +68,7 @@ const signup = async ({ full_name, email, password, phone_number }) => {
     phone_number,
     provider: "local",
     is_email_verified: false,
+    role: "user",
   });
 
   await sendSignupOtpToUser(user);
@@ -197,6 +198,7 @@ const findOrCreateOAuthUser = async (provider, profile) => {
     provider,
     provider_id: profile.provider_id,
     is_email_verified: true,
+    role: "user",
   });
 };
 
