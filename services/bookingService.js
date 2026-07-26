@@ -116,8 +116,8 @@ const createBooking = async (user, bookingData) => {
 
   if (bookingPayload.amount !== undefined && bookingPayload.amount !== null) {
     bookingPayload.amount = Number(bookingPayload.amount);
-    bookingPayload.currency =
-      bookingPayload.currency || process.env.FATORA_CURRENCY || "QAR";
+      bookingPayload.currency =
+      bookingPayload.currency || process.env.MYFATOORAH_CURRENCY || process.env.FATORA_CURRENCY || "KWD";
     bookingPayload.payment_status = "pending";
   }
 

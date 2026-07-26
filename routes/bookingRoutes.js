@@ -6,6 +6,7 @@ const router = express.Router();
 router.post("/create", bookingController.createBooking);
 router.get("/get", bookingController.getBookings);
 router.get("/payment/webhook", bookingController.paymentWebhook);
+router.post("/payment/webhook", bookingController.paymentWebhook);
 router.post("/payment/verify/:id", bookingController.verifyPayment);
 router.put("/:id/cancel", bookingController.cancelBooking);
 router.put("/:id", bookingController.updateBooking);

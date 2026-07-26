@@ -46,7 +46,7 @@ const formatBooking = (booking) => ({
   addons: booking.addons || [],
   booking_status: booking.booking_status || "confirmed",
   amount: booking.amount ?? null,
-  currency: booking.currency || "QAR",
+  currency: booking.currency || "KWD",
   payment_status: booking.payment_status || "pending",
   fatora_order_id: booking.fatora_order_id || null,
   fatora_transaction_id: booking.fatora_transaction_id || null,
@@ -163,10 +163,11 @@ module.exports = {
   },
   verifyPayment: async (req, res, next) => {
     try {
-      const { transaction_id, order_id } = req.body;
+      const { transaction_id, order_id, payment_id } = req.body;
       const result = await paymentService.verifyAndUpdatePayment(req.user, req.params.id, {
         transaction_id,
         order_id,
+        payment_id,
       });
 
       res.status(200).json({
@@ -189,12 +190,15 @@ module.exports = {
   },
   paymentWebhook: async (req, res, next) => {
     try {
-      const booking = await paymentService.handleWebhook(req.query);
+      const signature =
+        req.headers["myfatoorah-signature"] || req.headers["MyFatoorah-Signature"];
+      const payload = req.method === "POST" ? req.body : req.query;
+      const booking = await paymentService.handleWebhook(payload, signature);
 
       res.status(200).json({
         success: true,
         message: "Webhook processed successfully",
-        data: formatBooking(booking),
+        data: booking ? formatBooking(booking) : { received: true },
       });
     } catch (error) {
       next(error);

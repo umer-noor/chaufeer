@@ -348,3 +348,50 @@ Booking flow:
   3. PUT  /booking/:id/cancel  (cancel booking)
 
 ================================================================================
+BOOKING - PAYMENT (MyFatoorah, currency KWD)
+================================================================================
+
+Same response shape as before (checkout_url + booking). Gateway is now MyFatoorah.
+
+1) Create booking with amount + currency KWD
+POST /api/booking/create
+Auth: Required
+
+2) Start payment
+POST /api/booking/:id/pay
+Auth: Required
+{
+  "amount": 1,
+  "currency": "KWD",
+  "language": "en"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Payment checkout created successfully",
+  "data": {
+    "booking": { ... },
+    "checkout_url": "https://demo.MyFatoorah.com/..."
+  }
+}
+
+3) Open checkout_url in browser, pay with sandbox test card:
+   Card: 5453 0100 0000 4358
+   Exp: 12/25  CVC: 100  OTP: 112233
+
+4) After redirect, verify (paymentId from success URL query):
+POST /api/booking/payment/verify/:id
+Auth: Required
+{
+  "payment_id": "PAYMENT_ID_FROM_URL"
+}
+
+5) Check status
+GET /api/booking/:id/payment/status
+Auth: Required
+
+Webhook (MyFatoorah dashboard):
+POST https://chaufeer.vercel.app/api/booking/payment/webhook
+
+================================================================================

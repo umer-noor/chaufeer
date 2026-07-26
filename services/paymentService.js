@@ -1,26 +1,20 @@
 const Booking = require("../models/Booking");
 const User = require("../models/User");
-const fatoraService = require("./fatoraService");
+const myfatoorahService = require("./myfatoorahService");
 const { sendBookingConfirmationEmail } = require("../utils/sendEmail");
-
-const SUCCESS_RESPONSE_CODE = "000";
 
 const buildOrderId = (bookingId) => bookingId.toString();
 
-const parseBookingIdFromOrderId = (orderId) => {
-  if (!orderId) {
-    return null;
-  }
-
-  return orderId.toString();
-};
-
 const getRedirectUrls = () => {
-  const successUrl = process.env.FATORA_SUCCESS_URL;
-  const failureUrl = process.env.FATORA_FAILURE_URL;
+  const successUrl =
+    process.env.MYFATOORAH_SUCCESS_URL || process.env.FATORA_SUCCESS_URL;
+  const failureUrl =
+    process.env.MYFATOORAH_FAILURE_URL || process.env.FATORA_FAILURE_URL;
 
   if (!successUrl || !failureUrl) {
-    const error = new Error("FATORA_SUCCESS_URL and FATORA_FAILURE_URL must be configured");
+    const error = new Error(
+      "MYFATOORAH_SUCCESS_URL and MYFATOORAH_FAILURE_URL must be configured"
+    );
     error.statusCode = 500;
     throw error;
   }
@@ -44,9 +38,12 @@ const updateBookingPayment = async (booking, paymentResult) => {
   const paymentStatus = mapPaymentStatus(paymentResult.payment_status);
 
   booking.payment_status = paymentStatus;
-  booking.fatora_transaction_id = paymentResult.transaction_id || booking.fatora_transaction_id;
-  booking.payment_response_code = paymentResult.auth_code || booking.payment_response_code;
-  booking.payment_description = paymentResult.description || booking.payment_description;
+  booking.fatora_transaction_id =
+    paymentResult.transaction_id || booking.fatora_transaction_id;
+  booking.payment_response_code =
+    paymentResult.auth_code || booking.payment_response_code;
+  booking.payment_description =
+    paymentResult.description || booking.payment_description;
 
   if (paymentStatus === "paid") {
     booking.paid_at = paymentResult.payment_date
@@ -82,35 +79,43 @@ const initiatePayment = async (user, bookingId, { amount, currency, language }) 
   }
 
   booking.amount = Number(paymentAmount);
-  booking.currency = currency || booking.currency || process.env.FATORA_CURRENCY || "QAR";
+  booking.currency =
+    currency ||
+    booking.currency ||
+    process.env.MYFATOORAH_CURRENCY ||
+    process.env.FATORA_CURRENCY ||
+    "KWD";
   booking.payment_status = "pending";
-  booking.fatora_order_id = buildOrderId(booking._id);
 
   const { successUrl, failureUrl } = getRedirectUrls();
 
-  const checkoutUrl = await fatoraService.createCheckout({
+  const checkout = await myfatoorahService.createCheckout({
     amount: booking.amount,
     currency: booking.currency,
-    orderId: booking.fatora_order_id,
-    clientName: user.full_name,
-    clientEmail: user.email,
-    clientPhone: user.phone_number,
+    orderId: buildOrderId(booking._id),
+    clientName: booking.passenger_name || user.full_name,
+    clientEmail: booking.passenger_email || user.email,
+    clientPhone: booking.phone_number || user.phone_number,
     successUrl,
     failureUrl,
     language: language || "en",
-    note: `Chaufeer booking ${booking.service_type.replace(/_/g, " ")}`,
   });
 
-  booking.fatora_checkout_url = checkoutUrl;
+  booking.fatora_order_id = checkout.invoice_id;
+  booking.fatora_checkout_url = checkout.checkout_url;
   await booking.save();
 
   return {
     booking,
-    checkout_url: checkoutUrl,
+    checkout_url: checkout.checkout_url,
   };
 };
 
-const verifyAndUpdatePayment = async (user, bookingId, { transaction_id, order_id }) => {
+const verifyAndUpdatePayment = async (
+  user,
+  bookingId,
+  { transaction_id, order_id, payment_id }
+) => {
   const booking = await Booking.findOne({ _id: bookingId, user: user._id });
 
   if (!booking) {
@@ -119,10 +124,13 @@ const verifyAndUpdatePayment = async (user, bookingId, { transaction_id, order_i
     throw error;
   }
 
-  const orderId = order_id || booking.fatora_order_id || buildOrderId(booking._id);
-  const paymentResult = await fatoraService.verifyPayment({
-    orderId,
-    transactionId: transaction_id || booking.fatora_transaction_id,
+  const paymentResult = await myfatoorahService.getPaymentStatus({
+    paymentId: payment_id || null,
+    invoiceId:
+      order_id ||
+      transaction_id ||
+      booking.fatora_order_id ||
+      booking.fatora_transaction_id,
   });
 
   const wasPaid = booking.payment_status === "paid";
@@ -142,19 +150,63 @@ const verifyAndUpdatePayment = async (user, bookingId, { transaction_id, order_i
   };
 };
 
-const handleWebhook = async (query) => {
-  const orderId =
-    query.order_id || query.orderId || query.orderid;
-  const transactionId =
-    query.transaction_id || query.transId || query.transid;
-  const responseCode = query.response_code || query.responseCode;
-  const status = query.status || query.payment_status;
-  const description = query.description || query.Failerdescription;
+const handleWebhook = async (payload, signatureHeader) => {
+  // MyFatoorah POST webhook
+  if (payload && typeof payload === "object" && (payload.Data || payload.Event)) {
+    if (
+      process.env.MYFATOORAH_WEBHOOK_SECRET &&
+      !myfatoorahService.verifyWebhookSignature(payload.Data, signatureHeader)
+    ) {
+      const error = new Error("Invalid signature");
+      error.statusCode = 401;
+      throw error;
+    }
 
-  const bookingId = parseBookingIdFromOrderId(orderId);
+    const data = payload.Data || {};
+    const customerReference = data.CustomerReference;
+    const invoiceId = data.InvoiceId;
+
+    let booking = null;
+
+    if (customerReference) {
+      booking = await Booking.findById(customerReference).catch(() => null);
+    }
+
+    if (!booking && invoiceId) {
+      booking = await Booking.findOne({ fatora_order_id: String(invoiceId) });
+    }
+
+    if (!booking) {
+      return null;
+    }
+
+    const paymentResult = await myfatoorahService.getPaymentStatus({
+      invoiceId: String(invoiceId || booking.fatora_order_id),
+    });
+
+    const wasPaid = booking.payment_status === "paid";
+    const updatedBooking = await updateBookingPayment(booking, paymentResult);
+
+    if (!wasPaid && updatedBooking.payment_status === "paid") {
+      const user = await User.findById(updatedBooking.user);
+      if (user) {
+        try {
+          await sendBookingConfirmationEmail(updatedBooking, user);
+        } catch (error) {
+          console.error("Booking confirmation email failed after webhook:", error.message);
+        }
+      }
+    }
+
+    return updatedBooking;
+  }
+
+  // Legacy Fatora-style GET query support
+  const orderId = payload.order_id || payload.orderId || payload.orderid;
+  const bookingId = orderId ? String(orderId) : null;
 
   if (!bookingId) {
-    const error = new Error("order_id is required");
+    const error = new Error("order_id or MyFatoorah webhook Data is required");
     error.statusCode = 400;
     throw error;
   }
@@ -167,51 +219,11 @@ const handleWebhook = async (query) => {
     throw error;
   }
 
-  let paymentResult;
+  const paymentResult = await myfatoorahService.getPaymentStatus({
+    invoiceId: booking.fatora_order_id || bookingId,
+  });
 
-  try {
-    paymentResult = await fatoraService.verifyPayment({
-      orderId,
-      transactionId,
-    });
-  } catch (error) {
-    if (responseCode === SUCCESS_RESPONSE_CODE || status === "SUCCESS") {
-      booking.payment_status = "paid";
-      booking.fatora_transaction_id = transactionId || booking.fatora_transaction_id;
-      booking.payment_response_code = responseCode || booking.payment_response_code;
-      booking.payment_description = description || booking.payment_description;
-      booking.paid_at = new Date();
-      await booking.save();
-      return booking;
-    }
-
-    if (status === "FAILURE") {
-      booking.payment_status = "failed";
-      booking.fatora_transaction_id = transactionId || booking.fatora_transaction_id;
-      booking.payment_description = description || booking.payment_description;
-      await booking.save();
-      return booking;
-    }
-
-    throw error;
-  }
-
-  const wasPaid = booking.payment_status === "paid";
-  const updatedBooking = await updateBookingPayment(booking, paymentResult);
-
-  if (!wasPaid && updatedBooking.payment_status === "paid") {
-    const user = await User.findById(updatedBooking.user);
-
-    if (user) {
-      try {
-        await sendBookingConfirmationEmail(updatedBooking, user);
-      } catch (error) {
-        console.error("Booking confirmation email failed after webhook:", error.message);
-      }
-    }
-  }
-
-  return updatedBooking;
+  return updateBookingPayment(booking, paymentResult);
 };
 
 const getPaymentStatus = async (userId, bookingId) => {

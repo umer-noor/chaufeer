@@ -12,6 +12,7 @@ const exactPublicRoutes = [
   ["POST", "/auth/resend-signup-otp"],
   ["POST", "/auth/reset-password"],
   ["GET", "/booking/payment/webhook"],
+  ["POST", "/booking/payment/webhook"],
   ["POST", "/get_in_touch/create"],
 ];
 
