@@ -7,6 +7,7 @@ const fleetRoutes = require("./routes/fleetRoutes");
 const fleetDetailRoutes = require("./routes/fleetDetailRoutes");
 const serviceCoverageRoutes = require("./routes/serviceCoverageRoutes");
 const customerReviewRoutes = require("./routes/customerReviewRoutes");
+const pricingRoutes = require("./routes/pricingRoutes");
 const requireAuthUnlessPublic = require("./middleware/routeAuth");
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.use("/fleet", fleetRoutes);
 router.use("/fleet_detail", fleetDetailRoutes);
 router.use("/service_coverage", serviceCoverageRoutes);
 router.use("/customer_review", customerReviewRoutes);
+router.use("/pricing", pricingRoutes);
 router.use("/users", userRoutes);
 
 module.exports = router;

@@ -78,6 +78,14 @@ app.get("/", (req, res) => {
         update: "PUT /api/customer_review/:id",
         delete: "DELETE /api/customer_review/:id",
       },
+      pricing: {
+        quote: "POST /api/pricing/quote",
+        get_quote: "GET /api/pricing/quotes/:id",
+        pending_quotes: "GET /api/pricing/quotes/pending/list",
+        set_quote_price: "PUT /api/pricing/quotes/:id/set-price",
+        fixed_crud: "/api/pricing/fixed/*",
+        hourly_crud: "/api/pricing/hourly/*",
+      },
     },
   });
 });

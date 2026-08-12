@@ -4,3 +4,8 @@ node_modules/
 logs/
 *.log
 .DS_Store
+
+# Local docs for UI / notes (not needed for production deploy)
+MYFATOORAH_INTEGRATION.md
+PAYMENT_API_FOR_UI.txt
+PRICING_API_FOR_UI.txt
