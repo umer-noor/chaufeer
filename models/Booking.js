@@ -8,7 +8,14 @@ const SERVICE_TYPES = [
 ];
 
 const PAYMENT_METHODS = ["cash", "card", "paypal"];
-const BOOKING_STATUSES = ["pending", "confirmed", "cancelled", "completed"];
+const BOOKING_STATUSES = [
+  "pending",
+  "confirmed",
+  "upcoming",
+  "inprogress",
+  "cancelled",
+  "completed",
+];
 
 const bookingSchema = new mongoose.Schema(
   {
@@ -74,6 +81,16 @@ const bookingSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    dropoff_date: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    dropoff_time: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     date_and_time: {
       type: Date,
       default: null,
@@ -126,7 +143,7 @@ const bookingSchema = new mongoose.Schema(
     booking_status: {
       type: String,
       enum: BOOKING_STATUSES,
-      default: "confirmed",
+      default: "upcoming",
     },
     amount: {
       type: Number,

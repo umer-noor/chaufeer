@@ -9,6 +9,7 @@ router.get("/payment/webhook", bookingController.paymentWebhook);
 router.post("/payment/webhook", bookingController.paymentWebhook);
 router.post("/payment/verify/:id", bookingController.verifyPayment);
 router.put("/:id/cancel", bookingController.cancelBooking);
+router.put("/:id/status", bookingController.updateBookingStatus);
 router.put("/:id", bookingController.updateBooking);
 router.post("/:id/pay", bookingController.initiatePayment);
 router.get("/:id/payment/status", bookingController.getPaymentStatus);

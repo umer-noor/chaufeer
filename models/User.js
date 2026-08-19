@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema(
         return this.provider === "local";
       },
     },
+    profile_image_url: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     provider: {
       type: String,
       enum: ["local", "google", "facebook"],

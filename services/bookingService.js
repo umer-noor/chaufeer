@@ -6,6 +6,12 @@ const {
   BOOKING_STATUSES,
 } = require("../models/Booking");
 const { sendBookingConfirmationEmail } = require("../utils/sendEmail");
+const {
+  resolveLiveStatus,
+  matchesTab,
+  overlapsDateRange,
+  normalizeStatusParam,
+} = require("../utils/bookingStatus");
 
 const buildDateAndTime = (pickup_date, pickup_time, date_and_time) => {
   if (date_and_time) {
@@ -31,6 +37,8 @@ const normalizeBookingInput = (data) => {
   const fleet_name = data.fleet_name || data.class || "";
   const pickup_date = data.pickup_date || "";
   const pickup_time = data.pickup_time || "";
+  const dropoff_date = data.dropoff_date || "";
+  const dropoff_time = data.dropoff_time || "";
 
   return {
     service_type: data.service_type,
@@ -44,6 +52,8 @@ const normalizeBookingInput = (data) => {
     dropoff_longitude: data.dropoff_longitude ?? null,
     pickup_date,
     pickup_time,
+    dropoff_date,
+    dropoff_time,
     date_and_time: buildDateAndTime(pickup_date, pickup_time, data.date_and_time),
     passengers_count,
     children_count,
@@ -111,7 +121,7 @@ const createBooking = async (user, bookingData) => {
     user_email: user.email,
     ...normalized,
     fleet_name,
-    booking_status: "confirmed",
+    booking_status: "upcoming",
   };
 
   if (bookingPayload.amount !== undefined && bookingPayload.amount !== null) {
@@ -136,10 +146,18 @@ const createBooking = async (user, bookingData) => {
   return booking;
 };
 
-const getBookingsByUser = async (userId) => {
-  return Booking.find({ user: userId })
+const getBookingsByUser = async (userId, query = {}) => {
+  const bookings = await Booking.find({ user: userId })
     .populate("fleet_id", "vehicle_name vehicle_type category image_url")
     .sort({ created_at: -1 });
+
+  return bookings.filter((booking) => {
+    const liveStatus = resolveLiveStatus(booking);
+    return (
+      matchesTab(liveStatus, query.status) &&
+      overlapsDateRange(booking, query.from, query.to)
+    );
+  });
 };
 
 const getBookingById = async (bookingId, userId) => {
@@ -205,6 +223,8 @@ const updateBooking = async (bookingId, userId, bookingData) => {
     "dropoff_longitude",
     "pickup_date",
     "pickup_time",
+    "dropoff_date",
+    "dropoff_time",
     "date_and_time",
     "passengers_count",
     "children_count",
@@ -274,12 +294,39 @@ const cancelBooking = async (bookingId, userId) => {
   return booking.populate("fleet_id", "vehicle_name vehicle_type category image_url");
 };
 
+const updateBookingStatus = async (bookingId, userId, status) => {
+  const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate(
+    "fleet_id",
+    "vehicle_name vehicle_type category image_url"
+  );
+
+  if (!booking) {
+    const error = new Error("Booking not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const nextStatus = normalizeStatusParam(status);
+  const allowed = ["upcoming", "inprogress", "cancelled", "completed"];
+
+  if (!allowed.includes(nextStatus)) {
+    const error = new Error("status must be upcoming, inprogress, cancelled, or completed");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  booking.booking_status = nextStatus;
+  await booking.save();
+  return booking;
+};
+
 module.exports = {
   createBooking,
   getBookingsByUser,
   getBookingById,
   updateBooking,
   cancelBooking,
+  updateBookingStatus,
   SERVICE_TYPES,
   PAYMENT_METHODS,
   BOOKING_STATUSES,

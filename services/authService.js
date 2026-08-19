@@ -387,8 +387,11 @@ const getProfile = async (user_id) => {
   return user;
 };
 
-const updateProfile = async (user_id, { full_name, phone_number }) => {
-  const user = await User.findById(user_id);
+const updateProfile = async (
+  user_id,
+  { full_name, phone_number, password, current_password, new_password, profile_image_url }
+) => {
+  const user = await User.findById(user_id).select("+password");
 
   if (!user) {
     const error = new Error("User not found");
@@ -402,6 +405,34 @@ const updateProfile = async (user_id, { full_name, phone_number }) => {
 
   if (phone_number !== undefined) {
     user.phone_number = phone_number;
+  }
+
+  if (profile_image_url !== undefined) {
+    user.profile_image_url = profile_image_url;
+  }
+
+  const nextPassword = new_password || password;
+
+  if (nextPassword !== undefined) {
+    if (!nextPassword || nextPassword.length < 6) {
+      const error = new Error("password must be at least 6 characters");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (user.provider === "local") {
+      if (current_password) {
+        const isPasswordValid = await user.comparePassword(current_password);
+
+        if (!isPasswordValid) {
+          const error = new Error("current_password is incorrect");
+          error.statusCode = 401;
+          throw error;
+        }
+      }
+
+      user.password = nextPassword;
+    }
   }
 
   await user.save();

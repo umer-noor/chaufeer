@@ -5,6 +5,7 @@ const formatUser = (user) => ({
   full_name: user.full_name,
   email: user.email,
   phone_number: user.phone_number || null,
+  profile_image_url: user.profile_image_url || "",
   provider: user.provider,
   is_email_verified: user.is_email_verified || false,
   role: user.role || "user",
@@ -241,18 +242,29 @@ const getProfile = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
   try {
-    const { full_name, phone_number } = req.body;
+    const { full_name, phone_number, password, current_password, new_password, profile_image_url } =
+      req.body;
 
-    if (full_name === undefined && phone_number === undefined) {
+    if (
+      full_name === undefined &&
+      phone_number === undefined &&
+      password === undefined &&
+      new_password === undefined &&
+      profile_image_url === undefined
+    ) {
       return res.status(400).json({
         success: false,
-        message: "At least one of full_name or phone_number is required",
+        message: "At least one of full_name, phone_number, password, or profile_image_url is required",
       });
     }
 
     const user = await authService.updateProfile(req.user._id, {
       full_name,
       phone_number,
+      password,
+      current_password,
+      new_password,
+      profile_image_url,
     });
 
     res.status(200).json({

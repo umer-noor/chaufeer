@@ -40,6 +40,7 @@ app.get("/", (req, res) => {
         get_one: "GET /api/booking/:id",
         update: "PUT /api/booking/:id",
         cancel: "PUT /api/booking/:id/cancel",
+        update_status: "PUT /api/booking/:id/status",
         pay: "POST /api/booking/:id/pay",
         verify_payment: "POST /api/booking/payment/verify/:id",
         payment_status: "GET /api/booking/:id/payment/status",

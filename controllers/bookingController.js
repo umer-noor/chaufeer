@@ -1,5 +1,6 @@
 const bookingService = require("../services/bookingService");
 const paymentService = require("../services/paymentService");
+const { resolveLiveStatus, getBookingWindow } = require("../utils/bookingStatus");
 
 const formatFleetRef = (fleet) => {
   if (!fleet) {
@@ -19,43 +20,52 @@ const formatFleetRef = (fleet) => {
   };
 };
 
-const formatBooking = (booking) => ({
-  id: booking._id,
-  user_email: booking.user_email,
-  service_type: booking.service_type,
-  fleet_id: booking.fleet_id?._id || booking.fleet_id || null,
-  fleet_name: booking.fleet_name || "",
-  fleet: formatFleetRef(booking.fleet_id),
-  pickup_location: booking.pickup_location,
-  pickup_latitude: booking.pickup_latitude ?? null,
-  pickup_longitude: booking.pickup_longitude ?? null,
-  dropoff_location: booking.dropoff_location,
-  dropoff_latitude: booking.dropoff_latitude ?? null,
-  dropoff_longitude: booking.dropoff_longitude ?? null,
-  pickup_date: booking.pickup_date || "",
-  pickup_time: booking.pickup_time || "",
-  date_and_time: booking.date_and_time || null,
-  passengers_count: booking.passengers_count,
-  children_count: booking.children_count ?? 0,
-  hours: booking.hours ?? null,
-  passenger_name: booking.passenger_name || "",
-  passenger_email: booking.passenger_email || "",
-  phone_number: booking.phone_number || "",
-  special_requests: booking.special_requests || "",
-  payment_method: booking.payment_method || "cash",
-  addons: booking.addons || [],
-  booking_status: booking.booking_status || "confirmed",
-  amount: booking.amount ?? null,
-  currency: booking.currency || "KWD",
-  payment_status: booking.payment_status || "pending",
-  fatora_order_id: booking.fatora_order_id || null,
-  fatora_transaction_id: booking.fatora_transaction_id || null,
-  fatora_checkout_url: booking.fatora_checkout_url || null,
-  payment_description: booking.payment_description || null,
-  paid_at: booking.paid_at || null,
-  created_at: booking.created_at,
-  updated_at: booking.updated_at,
-});
+const formatBooking = (booking) => {
+  const { start, end } = getBookingWindow(booking);
+  const liveStatus = resolveLiveStatus(booking);
+
+  return {
+    id: booking._id,
+    user_email: booking.user_email,
+    service_type: booking.service_type,
+    fleet_id: booking.fleet_id?._id || booking.fleet_id || null,
+    fleet_name: booking.fleet_name || "",
+    fleet: formatFleetRef(booking.fleet_id),
+    pickup_location: booking.pickup_location,
+    pickup_latitude: booking.pickup_latitude ?? null,
+    pickup_longitude: booking.pickup_longitude ?? null,
+    dropoff_location: booking.dropoff_location,
+    dropoff_latitude: booking.dropoff_latitude ?? null,
+    dropoff_longitude: booking.dropoff_longitude ?? null,
+    pickup_date: booking.pickup_date || "",
+    pickup_time: booking.pickup_time || "",
+    dropoff_date: booking.dropoff_date || "",
+    dropoff_time: booking.dropoff_time || "",
+    date_and_time: booking.date_and_time || null,
+    start_datetime: start,
+    end_datetime: end,
+    passengers_count: booking.passengers_count,
+    children_count: booking.children_count ?? 0,
+    hours: booking.hours ?? null,
+    passenger_name: booking.passenger_name || "",
+    passenger_email: booking.passenger_email || "",
+    phone_number: booking.phone_number || "",
+    special_requests: booking.special_requests || "",
+    payment_method: booking.payment_method || "cash",
+    addons: booking.addons || [],
+    booking_status: liveStatus,
+    amount: booking.amount ?? null,
+    currency: booking.currency || "KWD",
+    payment_status: booking.payment_status || "pending",
+    fatora_order_id: booking.fatora_order_id || null,
+    fatora_transaction_id: booking.fatora_transaction_id || null,
+    fatora_checkout_url: booking.fatora_checkout_url || null,
+    payment_description: booking.payment_description || null,
+    paid_at: booking.paid_at || null,
+    created_at: booking.created_at,
+    updated_at: booking.updated_at,
+  };
+};
 
 const createBooking = async (req, res, next) => {
   try {
@@ -73,7 +83,7 @@ const createBooking = async (req, res, next) => {
 
 const getBookings = async (req, res, next) => {
   try {
-    const bookings = await bookingService.getBookingsByUser(req.user._id);
+    const bookings = await bookingService.getBookingsByUser(req.user._id, req.query);
 
     res.status(200).json({
       success: true,
@@ -134,12 +144,40 @@ const cancelBooking = async (req, res, next) => {
   }
 };
 
+const updateBookingStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "status is required",
+      });
+    }
+
+    const booking = await bookingService.updateBookingStatus(
+      req.params.id,
+      req.user._id,
+      status
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Booking status updated successfully",
+      data: formatBooking(booking),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createBooking,
   getBookings,
   getBooking,
   updateBooking,
   cancelBooking,
+  updateBookingStatus,
   initiatePayment: async (req, res, next) => {
     try {
       const { amount, currency, language } = req.body;
