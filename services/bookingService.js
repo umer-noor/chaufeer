@@ -12,6 +12,7 @@ const {
   overlapsDateRange,
   normalizeStatusParam,
 } = require("../utils/bookingStatus");
+const notificationService = require("./notificationService");
 
 const buildDateAndTime = (pickup_date, pickup_time, date_and_time) => {
   if (date_and_time) {
@@ -142,6 +143,8 @@ const createBooking = async (user, bookingData) => {
       console.error("Booking email failed:", error.message);
     }
   }
+
+  await notificationService.notifyBookingCreated(booking, user);
 
   return booking;
 };
@@ -291,7 +294,18 @@ const cancelBooking = async (bookingId, userId) => {
   booking.booking_status = "cancelled";
   await booking.save();
 
-  return booking.populate("fleet_id", "vehicle_name vehicle_type category image_url");
+  const populated = await booking.populate(
+    "fleet_id",
+    "vehicle_name vehicle_type category image_url"
+  );
+
+  await notificationService.notifyBookingStatusChanged(
+    populated,
+    "cancelled",
+    null
+  );
+
+  return populated;
 };
 
 const updateBookingStatus = async (bookingId, userId, status) => {
@@ -317,6 +331,11 @@ const updateBookingStatus = async (bookingId, userId, status) => {
 
   booking.booking_status = nextStatus;
   await booking.save();
+
+  if (["cancelled", "completed", "inprogress"].includes(nextStatus)) {
+    await notificationService.notifyBookingStatusChanged(booking, nextStatus, null);
+  }
+
   return booking;
 };
 

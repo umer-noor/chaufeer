@@ -9,6 +9,7 @@ const {
 } = require("../models/PriceQuote");
 
 const DEFAULT_CURRENCY = process.env.MYFATOORAH_CURRENCY || "KWD";
+const notificationService = require("./notificationService");
 
 const ensureFleetExists = async (fleet_id) => {
   if (!fleet_id) {
@@ -85,6 +86,7 @@ const expireQuoteIfNeeded = async (quote) => {
   if (quote.status === "awaiting_admin" && quote.expires_at < new Date()) {
     quote.status = "expired";
     await quote.save();
+    await notificationService.notifyQuoteExpired(quote);
   }
 
   return quote;
@@ -277,6 +279,8 @@ const createQuote = async (user, data) => {
     expires_at,
   });
 
+  await notificationService.notifyLongDistanceQuote(quote, user);
+
   return {
     pricing_mode: "long_distance",
     status: "awaiting_admin",
@@ -322,10 +326,21 @@ const getQuoteById = async (quoteId, user) => {
 const getPendingQuotes = async () => {
   const now = new Date();
 
-  await PriceQuote.updateMany(
-    { status: "awaiting_admin", expires_at: { $lt: now } },
-    { $set: { status: "expired" } }
-  );
+  const expiredQuotes = await PriceQuote.find({
+    status: "awaiting_admin",
+    expires_at: { $lt: now },
+  });
+
+  if (expiredQuotes.length) {
+    await PriceQuote.updateMany(
+      { _id: { $in: expiredQuotes.map((q) => q._id) } },
+      { $set: { status: "expired" } }
+    );
+
+    await Promise.all(
+      expiredQuotes.map((quote) => notificationService.notifyQuoteExpired(quote))
+    );
+  }
 
   return PriceQuote.find({ status: "awaiting_admin" })
     .populate("fleet_id", "vehicle_name vehicle_type category")
@@ -375,7 +390,10 @@ const setQuotePrice = async (quoteId, adminUser, { amount, fleet_id, admin_note 
   quote.admin_note = admin_note || "";
   await quote.save();
 
-  return quote.populate("fleet_id", "vehicle_name vehicle_type category");
+  const populated = await quote.populate("fleet_id", "vehicle_name vehicle_type category");
+  await notificationService.notifyQuotePriced(populated);
+
+  return populated;
 };
 
 module.exports = {

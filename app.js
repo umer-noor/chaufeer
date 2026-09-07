@@ -87,6 +87,12 @@ app.get("/", (req, res) => {
         fixed_crud: "/api/pricing/fixed/*",
         hourly_crud: "/api/pricing/hourly/*",
       },
+      notifications: {
+        get: "GET /api/notifications/get",
+        unread_count: "GET /api/notifications/unread-count",
+        mark_all_read: "GET /api/notifications/mark-all-read",
+        mark_one_read: "GET /api/notifications/:id/read",
+      },
     },
   });
 });
