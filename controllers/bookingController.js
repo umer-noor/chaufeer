@@ -148,7 +148,7 @@ const cancelBooking = async (req, res, next) => {
 
 const updateBookingStatus = async (req, res, next) => {
   try {
-    const { status } = req.body;
+    const status = req.body.status || req.body.booking_status;
 
     if (!status) {
       return res.status(400).json({

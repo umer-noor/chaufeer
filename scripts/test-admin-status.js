@@ -100,6 +100,11 @@ const updateStatus = async (token, id, status) => {
     byAdmin.ok && byAdmin.status !== 404,
     String(byAdmin.status)
   );
+  assert(
+    "Response booking_status is inprogress",
+    byAdmin.data?.data?.booking_status === "inprogress",
+    byAdmin.data?.data?.booking_status
+  );
 
   const completed = await updateStatus(adminToken, bookingId, "completed");
   assert(

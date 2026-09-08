@@ -61,6 +61,11 @@ const resolveLiveStatus = (booking, now = new Date()) => {
     return "completed";
   }
 
+  // Respect admin/manual inprogress (do not override with date logic)
+  if (stored === "inprogress") {
+    return "inprogress";
+  }
+
   const { start, end } = getBookingWindow(booking);
 
   if (now < start) {
@@ -83,6 +88,10 @@ const normalizeStatusParam = (status) => {
 
   if (value === "cancel") {
     return "cancelled";
+  }
+
+  if (value === "in_progress" || value === "in-progress") {
+    return "inprogress";
   }
 
   return value;
