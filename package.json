@@ -13,7 +13,8 @@
     "vercel-build": "echo Build complete",
     "test:pricing": "node scripts/test-pricing.js",
     "test:profile-booking": "node scripts/test-profile-booking.js",
-    "test:notifications": "node scripts/test-notifications.js"
+    "test:notifications": "node scripts/test-notifications.js",
+    "test:admin-bookings": "node scripts/test-admin-bookings.js"
   },
   "keywords": [],
   "author": "",

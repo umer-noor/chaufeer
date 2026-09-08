@@ -149,8 +149,9 @@ const createBooking = async (user, bookingData) => {
   return booking;
 };
 
-const getBookingsByUser = async (userId, query = {}) => {
-  const bookings = await Booking.find({ user: userId })
+const getBookingsByUser = async (userId, query = {}, options = {}) => {
+  const filter = options.role === "admin" ? {} : { user: userId };
+  const bookings = await Booking.find(filter)
     .populate("fleet_id", "vehicle_name vehicle_type category image_url")
     .sort({ created_at: -1 });
 
