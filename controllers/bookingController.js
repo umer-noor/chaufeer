@@ -160,7 +160,8 @@ const updateBookingStatus = async (req, res, next) => {
     const booking = await bookingService.updateBookingStatus(
       req.params.id,
       req.user._id,
-      status
+      status,
+      { role: req.user.role }
     );
 
     res.status(200).json({

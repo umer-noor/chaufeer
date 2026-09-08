@@ -14,7 +14,8 @@
     "test:pricing": "node scripts/test-pricing.js",
     "test:profile-booking": "node scripts/test-profile-booking.js",
     "test:notifications": "node scripts/test-notifications.js",
-    "test:admin-bookings": "node scripts/test-admin-bookings.js"
+    "test:admin-bookings": "node scripts/test-admin-bookings.js",
+    "test:admin-status": "node scripts/test-admin-status.js"
   },
   "keywords": [],
   "author": "",

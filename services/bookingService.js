@@ -309,8 +309,11 @@ const cancelBooking = async (bookingId, userId) => {
   return populated;
 };
 
-const updateBookingStatus = async (bookingId, userId, status) => {
-  const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate(
+const updateBookingStatus = async (bookingId, userId, status, options = {}) => {
+  const filter =
+    options.role === "admin" ? { _id: bookingId } : { _id: bookingId, user: userId };
+
+  const booking = await Booking.findOne(filter).populate(
     "fleet_id",
     "vehicle_name vehicle_type category image_url"
   );
