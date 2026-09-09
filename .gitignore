@@ -1,5 +1,6 @@
 node_modules/
 .env
+.env.example
 .vercel
 logs/
 *.log
@@ -11,3 +12,4 @@ PAYMENT_API_FOR_UI.txt
 PRICING_API_FOR_UI.txt
 PROFILE_BOOKING_API_FOR_UI.txt
 NOTIFICATIONS_API_FOR_UI.txt
+FCM_WEB_API_FOR_UI.txt

@@ -1,5 +1,6 @@
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const deviceTokenService = require("./deviceTokenService");
 const {
   buildBookingCreated,
   buildBookingCancelled,
@@ -24,7 +25,7 @@ const createNotification = async ({
     return null;
   }
 
-  return Notification.create({
+  const notification = await Notification.create({
     recipient,
     recipient_role,
     type,
@@ -35,6 +36,25 @@ const createNotification = async ({
     is_read: false,
     meta,
   });
+
+  // Fire-and-forget FCM push (does not change API response shape)
+  deviceTokenService
+    .sendPushToUser(recipient, {
+      title,
+      body: message,
+      data: {
+        type: type || "",
+        notification_id: String(notification._id),
+        booking_id: booking_id ? String(booking_id) : "",
+        quote_id: quote_id ? String(quote_id) : "",
+        recipient_role: recipient_role || "",
+      },
+    })
+    .catch((error) => {
+      console.error("FCM push failed:", error.message);
+    });
+
+  return notification;
 };
 
 const getAdminIds = async () => {
@@ -297,4 +317,6 @@ module.exports = {
   getUnreadCount,
   markAsRead,
   markAllAsRead,
+  saveDeviceToken: deviceTokenService.saveDeviceToken,
+  removeDeviceToken: deviceTokenService.removeDeviceToken,
 };

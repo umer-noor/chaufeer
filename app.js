@@ -92,6 +92,8 @@ app.get("/", (req, res) => {
         unread_count: "GET /api/notifications/unread-count",
         mark_all_read: "GET /api/notifications/mark-all-read",
         mark_one_read: "GET /api/notifications/:id/read",
+        save_device_token: "POST /api/notifications/device-token",
+        remove_device_token: "DELETE /api/notifications/device-token",
       },
     },
   });

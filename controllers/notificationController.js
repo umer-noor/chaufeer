@@ -76,9 +76,42 @@ const markAllNotificationsRead = async (req, res, next) => {
   }
 };
 
+const saveDeviceToken = async (req, res, next) => {
+  try {
+    const data = await notificationService.saveDeviceToken(req.user._id, {
+      token: req.body.token,
+      platform: req.body.platform || "web",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Device token saved",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const removeDeviceToken = async (req, res, next) => {
+  try {
+    const data = await notificationService.removeDeviceToken(req.user._id, req.body.token);
+
+    res.status(200).json({
+      success: true,
+      message: "Device token removed",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getNotifications,
   getUnreadCount,
   markNotificationRead,
   markAllNotificationsRead,
+  saveDeviceToken,
+  removeDeviceToken,
 };

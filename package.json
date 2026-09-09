@@ -15,7 +15,8 @@
     "test:profile-booking": "node scripts/test-profile-booking.js",
     "test:notifications": "node scripts/test-notifications.js",
     "test:admin-bookings": "node scripts/test-admin-bookings.js",
-    "test:admin-status": "node scripts/test-admin-status.js"
+    "test:admin-status": "node scripts/test-admin-status.js",
+    "test:fcm-web": "node scripts/test-fcm-web.js"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +31,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "firebase-admin": "^14.3.0",
     "google-auth-library": "^9.15.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.3",
