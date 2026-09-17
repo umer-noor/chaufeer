@@ -1,5 +1,5 @@
 const TERMINAL_STATUSES = ["cancelled", "completed"];
-const UPCOMING_TAB_STATUSES = ["upcoming", "inprogress"];
+const UPCOMING_TAB_STATUSES = ["upcoming", "assigned", "en_route", "inprogress"];
 const HISTORY_TAB_STATUSES = ["cancelled", "completed"];
 
 const parseDateTime = (dateStr, timeStr, fallbackDate) => {
@@ -61,9 +61,17 @@ const resolveLiveStatus = (booking, now = new Date()) => {
     return "completed";
   }
 
-  // Respect admin/manual inprogress (do not override with date logic)
+  // Respect admin/manual operational statuses
   if (stored === "inprogress") {
     return "inprogress";
+  }
+
+  if (stored === "assigned") {
+    return "assigned";
+  }
+
+  if (stored === "en_route" || stored === "enroute") {
+    return "en_route";
   }
 
   const { start, end } = getBookingWindow(booking);
@@ -92,6 +100,10 @@ const normalizeStatusParam = (status) => {
 
   if (value === "in_progress" || value === "in-progress") {
     return "inprogress";
+  }
+
+  if (value === "enroute" || value === "en-route") {
+    return "en_route";
   }
 
   return value;

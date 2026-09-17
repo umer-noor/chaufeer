@@ -16,7 +16,9 @@
     "test:notifications": "node scripts/test-notifications.js",
     "test:admin-bookings": "node scripts/test-admin-bookings.js",
     "test:admin-status": "node scripts/test-admin-status.js",
-    "test:fcm-web": "node scripts/test-fcm-web.js"
+    "test:fcm-web": "node scripts/test-fcm-web.js",
+    "cleanup:audit-test-data": "node scripts/cleanup-audit-test-data.js",
+    "test:audit-backend": "node scripts/test-audit-backend.js"
   },
   "keywords": [],
   "author": "",

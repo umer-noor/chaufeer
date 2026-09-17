@@ -1,14 +1,18 @@
 const mongoose = require("mongoose");
 
+// Approved Maseer 8-category structure (auditor go-live)
 const FLEET_CATEGORIES = [
-  "green_class",
-  "ultra_luxury",
-  "business_van",
-  "vip_business_class",
-  "economy_class",
+  "economy_executive_sedans",
+  "business_class_sedans",
+  "first_class_sedans",
+  "premium_suvs",
+  "luxury_ultra_luxury",
+  "vans_minivans",
+  "coasters_buses",
+  "electric_mobility",
 ];
 
-const VEHICLE_TYPES = ["sedan", "suv", "van"];
+const VEHICLE_TYPES = ["sedan", "suv", "van", "bus", "ev"];
 
 const fleetSchema = new mongoose.Schema(
   {

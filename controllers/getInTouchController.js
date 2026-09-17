@@ -12,6 +12,15 @@ const formatInquiry = (inquiry) => ({
 
 const getInTouch = async (req, res, next) => {
   try {
+    // Honeypot: bots fill this hidden field; real users leave it empty
+    if (req.body.website || req.body.company_url || req.body.honeypot) {
+      return res.status(201).json({
+        success: true,
+        message: "Request submitted successfully",
+        data: null,
+      });
+    }
+
     const { full_name, phone_number, email_address, note } = req.body;
 
     if (!full_name || !phone_number || !email_address || !note) {

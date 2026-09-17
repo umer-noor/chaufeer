@@ -41,6 +41,12 @@ const normalizeBookingInput = (data) => {
   const dropoff_date = data.dropoff_date || "";
   const dropoff_time = data.dropoff_time || "";
 
+  const base_amount = Number(data.base_amount ?? data.amount ?? 0) || 0;
+  const tax_amount = Number(data.tax_amount ?? 0) || 0;
+  const tolls_amount = Number(data.tolls_amount ?? 0) || 0;
+  const waiting_amount = Number(data.waiting_amount ?? 0) || 0;
+  const computedTotal = base_amount + tax_amount + tolls_amount + waiting_amount;
+
   return {
     service_type: data.service_type,
     fleet_id: data.fleet_id || null,
@@ -65,14 +71,28 @@ const normalizeBookingInput = (data) => {
     special_requests: data.special_requests || "",
     payment_method: data.payment_method || "cash",
     addons: Array.isArray(data.addons) ? data.addons : [],
-    amount: data.amount,
+    amount: data.amount !== undefined && data.amount !== null ? Number(data.amount) : computedTotal || undefined,
+    base_amount,
+    tax_amount,
+    tolls_amount,
+    waiting_amount,
     currency: data.currency,
+    terms_accepted: data.terms_accepted === true || data.terms_accepted === "true",
+    terms_version: data.terms_version || "v1",
   };
+};
+
+const buildBookingReference = () => {
+  const stamp = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `MAE-${stamp}${rand}`;
 };
 
 const resolveFleetName = async (fleet_id, fleet_name) => {
   if (!fleet_id) {
-    return fleet_name || "";
+    const error = new Error("fleet_id is required");
+    error.statusCode = 400;
+    throw error;
   }
 
   const fleet = await Fleet.findById(fleet_id);
@@ -80,6 +100,12 @@ const resolveFleetName = async (fleet_id, fleet_name) => {
   if (!fleet) {
     const error = new Error("Fleet not found");
     error.statusCode = 404;
+    throw error;
+  }
+
+  if (fleet.is_active === false) {
+    const error = new Error("Selected fleet is not active");
+    error.statusCode = 400;
     throw error;
   }
 
@@ -115,6 +141,12 @@ const createBooking = async (user, bookingData) => {
     throw error;
   }
 
+  if (!normalized.terms_accepted) {
+    const error = new Error("terms_accepted must be true");
+    error.statusCode = 400;
+    throw error;
+  }
+
   const fleet_name = await resolveFleetName(normalized.fleet_id, normalized.fleet_name);
 
   const bookingPayload = {
@@ -123,11 +155,14 @@ const createBooking = async (user, bookingData) => {
     ...normalized,
     fleet_name,
     booking_status: "upcoming",
+    booking_reference: buildBookingReference(),
+    terms_accepted: true,
+    terms_accepted_at: new Date(),
   };
 
   if (bookingPayload.amount !== undefined && bookingPayload.amount !== null) {
     bookingPayload.amount = Number(bookingPayload.amount);
-      bookingPayload.currency =
+    bookingPayload.currency =
       bookingPayload.currency || process.env.MYFATOORAH_CURRENCY || process.env.FATORA_CURRENCY || "KWD";
     bookingPayload.payment_status = "pending";
   }
@@ -325,10 +360,19 @@ const updateBookingStatus = async (bookingId, userId, status, options = {}) => {
   }
 
   const nextStatus = normalizeStatusParam(status);
-  const allowed = ["upcoming", "inprogress", "cancelled", "completed"];
+  const allowed = [
+    "upcoming",
+    "assigned",
+    "en_route",
+    "inprogress",
+    "cancelled",
+    "completed",
+  ];
 
   if (!allowed.includes(nextStatus)) {
-    const error = new Error("status must be upcoming, inprogress, cancelled, or completed");
+    const error = new Error(
+      "status must be upcoming, assigned, en_route, inprogress, cancelled, or completed"
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -336,7 +380,7 @@ const updateBookingStatus = async (bookingId, userId, status, options = {}) => {
   booking.booking_status = nextStatus;
   await booking.save();
 
-  if (["cancelled", "completed", "inprogress"].includes(nextStatus)) {
+  if (["cancelled", "completed", "inprogress", "assigned", "en_route"].includes(nextStatus)) {
     await notificationService.notifyBookingStatusChanged(booking, nextStatus, null);
   }
 

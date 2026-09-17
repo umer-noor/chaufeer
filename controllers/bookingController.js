@@ -26,6 +26,7 @@ const formatBooking = (booking) => {
 
   return {
     id: booking._id,
+    booking_reference: booking.booking_reference || null,
     user_email: booking.user_email,
     service_type: booking.service_type,
     fleet_id: booking.fleet_id?._id || booking.fleet_id || null,
@@ -55,7 +56,17 @@ const formatBooking = (booking) => {
     addons: booking.addons || [],
     booking_status: liveStatus,
     amount: booking.amount ?? null,
+    price_breakdown: {
+      base_amount: booking.base_amount ?? 0,
+      tax_amount: booking.tax_amount ?? 0,
+      tolls_amount: booking.tolls_amount ?? 0,
+      waiting_amount: booking.waiting_amount ?? 0,
+      total_amount: booking.amount ?? null,
+    },
     currency: booking.currency || "KWD",
+    terms_accepted: Boolean(booking.terms_accepted),
+    terms_accepted_at: booking.terms_accepted_at || null,
+    terms_version: booking.terms_version || "",
     payment_status: booking.payment_status || "pending",
     fatora_order_id: booking.fatora_order_id || null,
     fatora_transaction_id: booking.fatora_transaction_id || null,

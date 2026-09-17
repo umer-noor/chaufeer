@@ -12,6 +12,8 @@ const BOOKING_STATUSES = [
   "pending",
   "confirmed",
   "upcoming",
+  "assigned",
+  "en_route",
   "inprogress",
   "cancelled",
   "completed",
@@ -145,13 +147,52 @@ const bookingSchema = new mongoose.Schema(
       enum: BOOKING_STATUSES,
       default: "upcoming",
     },
+    booking_reference: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    terms_accepted: {
+      type: Boolean,
+      default: false,
+    },
+    terms_accepted_at: {
+      type: Date,
+      default: null,
+    },
+    terms_version: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     amount: {
       type: Number,
       min: [0, "Amount cannot be negative"],
     },
+    base_amount: {
+      type: Number,
+      min: [0, "Base amount cannot be negative"],
+      default: 0,
+    },
+    tax_amount: {
+      type: Number,
+      min: [0, "Tax amount cannot be negative"],
+      default: 0,
+    },
+    tolls_amount: {
+      type: Number,
+      min: [0, "Tolls amount cannot be negative"],
+      default: 0,
+    },
+    waiting_amount: {
+      type: Number,
+      min: [0, "Waiting amount cannot be negative"],
+      default: 0,
+    },
     currency: {
       type: String,
-      default: "QAR",
+      default: "KWD",
       trim: true,
     },
     payment_status: {

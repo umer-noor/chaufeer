@@ -56,6 +56,13 @@ const formatQuote = (quote) => ({
   pricing_mode: quote.pricing_mode,
   status: quote.status,
   amount: quote.amount,
+  price_breakdown: {
+    base_amount: quote.base_amount ?? quote.amount ?? 0,
+    tax_amount: quote.tax_amount ?? 0,
+    tolls_amount: quote.tolls_amount ?? 0,
+    waiting_amount: quote.waiting_amount ?? 0,
+    total_amount: quote.amount ?? null,
+  },
   currency: quote.currency,
   admin_note: quote.admin_note,
   expires_at: quote.expires_at,

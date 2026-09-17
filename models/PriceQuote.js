@@ -37,6 +37,26 @@ const priceQuoteSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    base_amount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    tax_amount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    tolls_amount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    waiting_amount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
     currency: {
       type: String,
       default: "KWD",
