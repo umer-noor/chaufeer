@@ -1,0 +1,189 @@
+================================================================================
+AUDIT BACKEND CHANGES — FOR UI DEVELOPER / AI
+================================================================================
+Base URL: https://chaufeer.vercel.app/api
+Auth header: Authorization: Bearer <token>
+Content-Type: application/json
+
+Market/currency: UNCHANGED (keep current KWD setup)
+Backend is already deployed. UI must update to match.
+
+
+================================================================================
+WHAT BACKEND DID (summary)
+================================================================================
+1. Deleted test fleet + test reviews from production DB
+2. Fleet categories changed to 8 approved values
+3. Booking create now requires fleet_id + terms_accepted
+4. Booking returns booking_reference + price_breakdown + terms fields
+5. New statuses: assigned, en_route
+6. Auth rate-limit + contact form honeypot/spam protection
+
+
+================================================================================
+1) FLEET CATEGORIES — API value vs UI label
+================================================================================
+Use these exact API values in filters/create/update.
+Show the label text to users.
+
+API value                      | UI label
+-------------------------------|----------------------------------
+economy_executive_sedans       | Economy & Executive Sedans
+business_class_sedans          | Business-Class Sedans
+first_class_sedans             | First-Class Sedans
+premium_suvs                   | Premium SUVs
+luxury_ultra_luxury            | Luxury & Ultra-Luxury Vehicles
+vans_minivans                  | Vans & Minivans
+coasters_buses                 | Coasters & Buses
+electric_mobility              | Electric Mobility
+
+Screens to update:
+- Fleet page category filters
+- Home fleet carousel filters (if any)
+- Booking vehicle/category filters
+- Admin fleet create/edit forms
+
+
+================================================================================
+2) BOOKING CREATE — REQUIRED CHANGES
+================================================================================
+POST /api/booking/create
+Auth: Required
+
+NOW REQUIRED:
+- fleet_id          (must be real active fleet from GET /api/fleet/get)
+- terms_accepted    (must be true)
+
+OPTIONAL:
+- terms_version     (default "v1")
+- base_amount, tax_amount, tolls_amount, waiting_amount
+- amount, currency, passenger fields, etc. (same as before)
+
+Example request:
+{
+  "service_type": "airport_transfer",
+  "fleet_id": "FLEET_MONGO_ID",
+  "pickup_location": "Riyadh Airport",
+  "dropoff_location": "Hotel",
+  "pickup_date": "2026-10-01",
+  "pickup_time": "10:00",
+  "dropoff_date": "2026-10-01",
+  "dropoff_time": "12:00",
+  "passengers_count": 2,
+  "children_count": 0,
+  "passenger_name": "Ali Khan",
+  "passenger_email": "ali@email.com",
+  "phone_number": "+96550000000",
+  "payment_method": "card",
+  "amount": 25,
+  "base_amount": 20,
+  "tax_amount": 3,
+  "tolls_amount": 1,
+  "waiting_amount": 1,
+  "currency": "KWD",
+  "terms_accepted": true,
+  "terms_version": "v1"
+}
+
+If fleet_id missing or terms_accepted is not true -> backend returns 400.
+
+
+================================================================================
+3) BOOKING RESPONSE — NEW FIELDS TO SHOW
+================================================================================
+Example success data fields (existing fields still returned):
+
+{
+  "success": true,
+  "message": "Booking created successfully",
+  "data": {
+    "id": "...",
+    "booking_reference": "MAE-XXXX",
+    "booking_status": "upcoming",
+    "amount": 25,
+    "currency": "KWD",
+    "price_breakdown": {
+      "base_amount": 20,
+      "tax_amount": 3,
+      "tolls_amount": 1,
+      "waiting_amount": 1,
+      "total_amount": 25
+    },
+    "terms_accepted": true,
+    "terms_accepted_at": "2026-09-17T00:00:00.000Z",
+    "terms_version": "v1"
+  }
+}
+
+UI confirmation screen should show:
+1. booking_reference (important)
+2. price_breakdown (recommended)
+3. itinerary / status as before
+
+
+================================================================================
+4) BOOKING STATUS VALUES
+================================================================================
+upcoming
+assigned
+en_route
+inprogress
+cancelled
+completed
+
+Update status:
+PUT /api/booking/{id}/status
+{ "status": "assigned" }
+
+Screens:
+- Admin booking status dropdown/buttons
+- Client booking status badges (if shown)
+
+
+================================================================================
+5) CONTACT / GET IN TOUCH — HONEYPOT
+================================================================================
+POST /api/get_in_touch/create
+
+Add a hidden empty field:
+  name="website"   (or "honeypot" / "company_url")
+  value=""
+  do not show to users
+
+Real users leave it empty.
+If filled, backend ignores as spam (fake success).
+
+
+================================================================================
+6) AUTH RATE LIMIT
+================================================================================
+Login / signup / OTP can return HTTP 429:
+{
+  "success": false,
+  "message": "Too many auth attempts. Please try again in 15 minutes."
+}
+
+UI: show that message if status === 429.
+
+
+================================================================================
+7) UI SCREEN CHECKLIST (for AI / developer)
+================================================================================
+[ ] Fleet filters use new 8 category API values + labels
+[ ] Booking form always sends fleet_id
+[ ] Booking form Terms checkbox -> terms_accepted: true
+[ ] Confirmation page shows booking_reference
+[ ] Confirmation/payment UI can show price_breakdown
+[ ] Status UI supports assigned + en_route
+[ ] Contact form has hidden website honeypot
+[ ] Handle 429 on auth screens
+[ ] Remove any hardcoded Test Mercedes / test review UI if still static
+
+
+================================================================================
+8) NOT DONE BY BACKEND (do not wait on these for UI code above)
+================================================================================
+- Final real fleet images/prices list (ops must provide; then admin/API seed)
+- Payment live methods list / 3DS / refunds (MyFatoorah merchant)
+
+================================================================================
